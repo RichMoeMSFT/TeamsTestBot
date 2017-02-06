@@ -242,5 +242,5 @@ ModelManifest.xml
 .fake/
 
 #web.config
-web.debug.config
-web.release.config
+[Ww]eb.[Dd]ebug.[Cc]onfig
+[Ww]eb.[Rr]elease.[Cc]onfig
