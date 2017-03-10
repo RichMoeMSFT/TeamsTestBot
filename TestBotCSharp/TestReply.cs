@@ -643,6 +643,7 @@ namespace TestBotCSharp
                         "<strike>Strike</strike>",
                         "<pre>code() using pre</pre>",
                         "<hr />",
+                        "emoji - &#128513; ",
                         "<ul><li>Unordered item 1</li><li>Unordered item 2</li><li>Unordered item 3</li></ul>",
                         "<ol><li>Ordered item 1</li><li>Ordered item 2</li><li>Ordered item 3</li></oll>",
  
@@ -674,6 +675,7 @@ namespace TestBotCSharp
                     "~~Strike~~",
                     "`code()`",
                     "---",
+                    "emoji - &#128513; ",
                     "* Unordered item 1<br />* Unordered item 2<br />* Unordered item 3",
                     "1. Ordered item 1<br />2. Ordered item 2<br />3. Ordered item 3",
 
