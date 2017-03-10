@@ -70,7 +70,7 @@ namespace TestBotCSharp
             cmdToTestDetail.Add("mentions", new TestDetail("Show the @mentions you pass", MentionsTest));
             cmdToTestDetail.Add("members", new TestDetail("Show members of the team", MembersTest));
 
-            cmdToTestDetail.Add("create", new TestDetail("Create a new conversation", CreateTest));
+            cmdToTestDetail.Add("create", new TestDetail("Create a new conversation", CreateConversationTest));
 
             cmdToTestDetail.Add("dumpin", new TestDetail("Display the incoming JSON", ActivityDumpIn));
             cmdToTestDetail.Add("dumpout", new TestDetail("Display the outgoing JSON", ActivityDumpOut));
@@ -117,26 +117,10 @@ namespace TestBotCSharp
         /// </summary>
         /// <param name="messageIn"></param>
         /// <returns></returns>
-        public Activity CreateTestMessage(Activity messageIn)
+        public Activity CreateMessage(Activity messageIn)
         {
             sourceMessage = messageIn;
             string messageText = StripBotNameFromText(messageIn.Text);
-
-            //For cases where bot is mentioned in channel, the bot name will be in the text, so cut it out.
-#if false
-
-
-            string botName = sourceMessage.Recipient.Name;
-            if (botName != null)
-            {
-                messageText = messageText.Replace(botName, "");
-                debugStr = messageText;
-            } else
-            {
-                debugStr = null;
-            }
-#endif
-
 
             //Split into arguments.  If in quotes, treat entire string as a single arg.
             args = messageText.Split('"')
@@ -208,7 +192,7 @@ namespace TestBotCSharp
         /// <summary>
         /// 
         /// </summary>
-        private void CreateTest()
+        private void CreateConversationTest()
         {
 
             //Check to validate this is in group context.
@@ -221,41 +205,13 @@ namespace TestBotCSharp
             var channelData = sourceMessage.ChannelData;
 
 
-            replyMessage.Text = "This is a new Conversation created with CreateConversation().";
+            replyMessage.Text = "This is a new Conversation created with CreateConversationAsync().";
             replyMessage.Text += "<br/><br/> ChannelID = " + sourceMessage.ChannelId;
             replyMessage.Text += "<br/>ConversationID (in) = " + sourceMessage.Conversation.Id;
- 
-            ConversationParameters conversationParams = new ConversationParameters(
-                isGroup: true,
-                bot: null,
-                members: null,
-                topicName: "Test Conversation",
-                activity: (Activity)replyMessage ,
-                channelData: channelData
-            );
 
-            var conversationID = connector.Conversations.CreateConversation(conversationParams);
 
-            replyMessage.Text += "<br/>ConversationID (out) = " + conversationID.Id;
-            replyMessage.Text += "<br/>ChannelData: " + channelData.ToString();
-
-            //replyMessage.Conversation = new ConversationAccount(id: conversationID.Id);
-            replyMessage.Conversation = new ConversationAccount(id: conversationID.Id);
-
-              /*
-            ConversationParameters cpMessage = new ConversationParameters(message.Recipient, true, participants, "Quarter End Discussion");
-            var conversationId = await connector.Conversations.CreateConversationAsync(cpMessage);
-            IMessageActivity message = Activity.CreateMessageActivity();
-            message.From = botAccount;
-            message.Recipient = new ChannelAccount("lydia@contoso.com", "Lydia the CFO"));
-            message.Conversation = new ConversationAccount(id: conversationId.Id);
-            message.ChannelId = incomingMessage.ChannelId;
-            */
-
-            //await connector.Conversations.SendToConversationAsync(replyMessage);
-            //if (dumpReply != null)
-            //await connector.Conversations.SendToConversationAsync(dumpReply);
-
+            //Trigger a new conversation to be created in MessagesController:
+            replyMessage.Conversation = null;
 
         }
 
@@ -533,6 +489,9 @@ namespace TestBotCSharp
         }
 
 
+        /// <summary>
+        /// 
+        /// </summary>
         private void Carousel1Message()
         {
 
@@ -658,6 +617,9 @@ namespace TestBotCSharp
             replyMessage.TextFormat = TextFormatTypes.Xml;
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
         private void FormatMDMessage()
         {
             var text = GetArg(1);

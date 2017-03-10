@@ -20,16 +20,42 @@ namespace TestBotCSharp
         /// </summary>
         public async Task<HttpResponseMessage> Post([FromBody]Activity activity)
         {
+            ConnectorClient connector = new ConnectorClient(new Uri(activity.ServiceUrl));
+            Activity reply = null;
+            Activity dumpReply = null;
+
             if (activity.Type == ActivityTypes.Message)
             {
 
-                ConnectorClient connector = new ConnectorClient(new Uri(activity.ServiceUrl));
-
                 TestReply testreply = new TestBotCSharp.TestReply(connector);
-                Activity reply = testreply.CreateTestMessage(activity);
-                Activity dumpReply = testreply.DumpMessage(activity, reply);
-                
-                if (reply.Conversation.Id != activity.Conversation.Id)
+                reply = testreply.CreateMessage(activity);
+                dumpReply = testreply.DumpMessage(activity, reply);
+
+            }
+            else
+            {
+                SystemReply systemReply = new TestBotCSharp.SystemReply(connector);
+                reply = systemReply.CreateMessage(activity);
+            }
+
+            if (reply != null)
+            {
+                if (reply.Conversation == null)
+                {
+                    ConversationParameters conversationParams = new ConversationParameters(
+                        isGroup: true,
+                        bot: null,
+                        members: null,
+                        topicName: "New Conversation",
+                        activity: (Activity)reply,
+                        channelData: activity.ChannelData
+                    );
+
+                    await connector.Conversations.CreateConversationAsync(conversationParams);
+                    if (dumpReply != null)
+                        await connector.Conversations.ReplyToActivityAsync(dumpReply);
+                }
+                else if (reply.Conversation.Id != activity.Conversation.Id)
                 {
                     await connector.Conversations.SendToConversationAsync(reply);
                     if (dumpReply != null)
@@ -41,43 +67,11 @@ namespace TestBotCSharp
                     if (dumpReply != null)
                         await connector.Conversations.ReplyToActivityAsync(dumpReply);
                 }
+            }
 
-            }
-            else
-            {
-                HandleSystemMessage(activity);
-            }
+
             var response = Request.CreateResponse(HttpStatusCode.OK);
             return response;
-        }
-
-        private Activity HandleSystemMessage(Activity message)
-        {
-            if (message.Type == ActivityTypes.DeleteUserData)
-            {
-                // Implement user deletion here
-                // If we handle user deletion, return a real message
-            }
-            else if (message.Type == ActivityTypes.ConversationUpdate)
-            {
-                // Handle conversation state changes, like members being added and removed
-                // Use Activity.MembersAdded and Activity.MembersRemoved and Activity.Action for info
-                // Not available in all channels
-            }
-            else if (message.Type == ActivityTypes.ContactRelationUpdate)
-            {
-                // Handle add/remove from contact lists
-                // Activity.From + Activity.Action represent what happened
-            }
-            else if (message.Type == ActivityTypes.Typing)
-            {
-                // Handle knowing tha the user is typing
-            }
-            else if (message.Type == ActivityTypes.Ping)
-            {
-            }
-
-            return null;
         }
     }
 }
