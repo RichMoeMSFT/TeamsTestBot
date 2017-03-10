@@ -134,7 +134,7 @@ namespace TestBotCSharp
             }
             if (addedBot)
             {
-                messageString = "Hello, I'm Teams TestBot, a handy tool to test Teams functionality.  This message was trigged by conversationUpdate, and I was one of the added members.  For more information about what I do, type help.";
+                messageString = "Hello, I'm Teams TestBot, a handy tool to test Teams functionality.  This message was trigged by `conversationUpdate`, where `ChannelData:eventType` is `teamMemberAdded`, and I was one of the added members.  \r\n\r\nFor more information about what I do, type **help**.";
             }
 
             return messageString;
@@ -146,8 +146,7 @@ namespace TestBotCSharp
         /// <returns></returns>
         private string RemoveMemberEvent()
         {
-            //This is not working!
-
+            //Note: if you remove the Bot, you cannot send the reply back, as it's no longer part of the team.
 
             string messageString = "Event: conversationUpdate\r\n\r\nteamEvent: teamMemberRemoved\r\n";
 
@@ -164,8 +163,10 @@ namespace TestBotCSharp
             }
             if (deletedBot)
             {
-                messageString = "I see you are deleted Teams TestBot, which makes me sad. This message was trigged by conversationUpdate, and I was one of the deleted members members.  Thanks for trying me, come back again real soon!";
-            }
+                //This won't display anything, but you could do something here to clean up cached information for the team.
+                // The TeamsID will be returned in ChannelData
+                messageString = null;
+              }
 
             return messageString;
         }
