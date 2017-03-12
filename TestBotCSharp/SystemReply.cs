@@ -51,6 +51,11 @@ namespace TestBotCSharp
             else if (messageIn.Type == ActivityTypes.Ping)
             {
             }
+            else
+            {
+                messageString = "Unknown Activity: " + (string)messageIn.Type;
+
+            }
             if (messageString != null)
             {
                 replyMessage = messageIn.CreateReply();
