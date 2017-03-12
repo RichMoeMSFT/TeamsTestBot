@@ -93,12 +93,16 @@ namespace TestBotCSharp
                     return RemoveMemberEvent();
 
                 }
-                else
+                else if (eventType == "channelCreated")
                 {
-                    //unkown event?
-                    messageString = "ActivityType: ConversationUpdate\r\n\r\n";
-                    messageString += "Unknown event: " + channelData["eventType"];
+                    return ChannelCreatedEvent();
                 }
+            else
+            {
+                //unknown event?
+                messageString = "ActivityType: ConversationUpdate\r\n\r\n";
+                messageString += "Unknown event: " + channelData["eventType"];
+            }
 
 
             }
@@ -148,7 +152,7 @@ namespace TestBotCSharp
         {
             //Note: if you remove the Bot, you cannot send the reply back, as it's no longer part of the team.
 
-            string messageString = "Event: conversationUpdate\r\n\r\nteamEvent: teamMemberRemoved\r\n";
+            string messageString = "Event: conversationUpdate\r\n\r\neventType: teamMemberRemoved\r\n";
 
             bool deletedBot = false;
             //Create a string of the deleted members.  Or if one of the members added was the bot, show the welcome message instead.
@@ -167,6 +171,25 @@ namespace TestBotCSharp
                 // The TeamsID will be returned in ChannelData
                 messageString = null;
               }
+
+            return messageString;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
+        private string ChannelCreatedEvent()
+        {
+            string messageString = "Event: conversationUpdate\r\n\r\neventType: channelCreated\r\n";
+
+
+            //Get the channelData eventType:
+            JObject channelData = (JObject)sourceMessage.ChannelData;
+            JObject channelInfo = (JObject)channelData["channel"];
+
+            messageString += "New channel id: " + (string)channelInfo["id"];
+            messageString += "New channel name: " + (string)channelInfo["name"];
 
             return messageString;
         }
