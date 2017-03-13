@@ -106,7 +106,8 @@ namespace TestBotCSharp
             {
                 if (m[i].Mentioned.Id == sourceMessage.Recipient.Id)
                 {
-                    messageText = messageText.Replace(m[i].Text, "");
+                    if (m[i].Text != null) //the Text field contains the full <at>name</at> string so is useful for stripping out.  If it's null, though, the bot name was passed silently, for e.g. bot-in-channel imBack
+                        messageText = messageText.Replace(m[i].Text, "");
                 }
             }
 
