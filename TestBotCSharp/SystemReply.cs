@@ -51,8 +51,17 @@ namespace TestBotCSharp
             else if (messageIn.Type == ActivityTypes.Ping)
             {
             }
+            else
+            {
+                messageString = "Unhandled Activity: " + (string)messageIn.Type;
+
+
+            }
             if (messageString != null)
             {
+                //Append full inboard payload:
+                messageString += "\r\n\r\n\r\n" + ActivityDumper.ActivityDump(messageIn);
+
                 replyMessage = messageIn.CreateReply();
                 replyMessage.Text = messageString;
             }
@@ -101,7 +110,7 @@ namespace TestBotCSharp
             {
                 //unknown event?
                 messageString = "ActivityType: ConversationUpdate\r\n\r\n";
-                messageString += "Unknown event: " + channelData["eventType"];
+                messageString += "Unhandled event: " + channelData["eventType"];
             }
 
 

@@ -58,6 +58,8 @@ namespace TestBotCSharp
             cmdToTestDetail.Add("imgCard", new TestDetail("Hero Card with [\"img\"] as Content", ImgCardMessage));
             cmdToTestDetail.Add("heroRYO", new TestDetail("Roll your own: [\"Title\"] [\"SubTitle\"] [\"Content\"] [\"ImageURL\"] [Buttons] ", HeroRYOMessage));
 
+            cmdToTestDetail.Add("heroInvoke", new TestDetail("Hero Card with [2] buttons using invoke action type", HeroInvokeMessage));
+
             cmdToTestDetail.Add("carousel1", new TestDetail("Show a Carousel with different cards in each", Carousel1Message));
             cmdToTestDetail.Add("carouselx", new TestDetail("Show a Carousel with [5] identical cards", CarouselxMessage));
 
@@ -104,7 +106,8 @@ namespace TestBotCSharp
             {
                 if (m[i].Mentioned.Id == sourceMessage.Recipient.Id)
                 {
-                    messageText = messageText.Replace(m[i].Text, "");
+                    if (m[i].Text != null) //the Text field contains the full <at>name</at> string so is useful for stripping out.  If it's null, though, the bot name was passed silently, for e.g. bot-in-channel imBack
+                        messageText = messageText.Replace(m[i].Text, "");
                 }
             }
 
@@ -352,6 +355,24 @@ namespace TestBotCSharp
 
         }
 
+        private void HeroInvokeMessage()
+        {
+            int numberOfButtons = GetArgInt(1);
+            if (numberOfButtons == -1) numberOfButtons = 2;
+
+            replyMessage.Attachments = new List<Attachment>()
+            {
+
+                GetHeroCardAttachment(
+                    "Invoke",
+                    "Hero card with invoke buttons",
+                    "Bacon ipsum dolor amet flank ground round chuck pork loin. Sirloin meatloaf boudin meatball ham hock shoulder capicola tri-tip sausage biltong cupim",
+                    null, 
+                    CreateButtons(numberOfButtons),
+                    true /* trigger invoke */
+                )
+            };
+        }
         /// <summary>
         /// 
         /// </summary>
@@ -699,7 +720,7 @@ namespace TestBotCSharp
         /// <param name="images">Images in the card</param>
         /// <param name="buttons">Buttons in the card</param>
         /// <returns>Card attachment</returns>
-        private static Attachment GetHeroCardAttachment(string title, string subTitle, string text, string[] images, string[] buttons)
+        private static Attachment GetHeroCardAttachment(string title, string subTitle, string text, string[] images, string[] buttons, bool useInvoke = false)
         {
             var heroCard = new HeroCard()
             {
@@ -728,12 +749,24 @@ namespace TestBotCSharp
             {
                 foreach (var btn in buttons)
                 {
-                    heroCard.Buttons.Add(new CardAction()
+                    if (useInvoke)
                     {
-                        Title = btn,
-                        Type = ActionTypes.ImBack,
-                        Value = btn,
-                    });
+                        heroCard.Buttons.Add(new CardAction()
+                        {
+                            Title = btn,
+                            Type = "invoke",
+                            Value = "{\"invokeValue:\": \"" + btn + "\"}"
+                        });
+                    }
+                    else
+                    {
+                        heroCard.Buttons.Add(new CardAction()
+                        {
+                            Title = btn,
+                            Type = ActionTypes.ImBack,
+                            Value = btn,
+                        });
+                    }
                 }
             }
 
