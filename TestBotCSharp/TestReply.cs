@@ -53,8 +53,8 @@ namespace TestBotCSharp
 
             cmdToTestDetail.Add("hero1", new TestDetail("Hero Card with [3] buttons", Hero1Message));
             cmdToTestDetail.Add("hero2", new TestDetail("Hero Card with no image and [3] buttons", Hero2Message));
-            cmdToTestDetail.Add("hero3", new TestDetail("Hero Card with no content and [\"Optional Title\"]", Hero3Message));
-            cmdToTestDetail.Add("hero4", new TestDetail("Hero Card with no content and [\"Optional Title\"]", Hero4Message));
+            cmdToTestDetail.Add("hero3", new TestDetail("!Hero Card with no content and [\"Optional Title\"]", Hero3Message));
+            cmdToTestDetail.Add("hero4", new TestDetail("!Hero Card with no content and [\"Optional Title\"]", Hero4Message));
             cmdToTestDetail.Add("imgCard", new TestDetail("Hero Card with [\"img\"] as Content", ImgCardMessage));
             cmdToTestDetail.Add("heroRYO", new TestDetail("Roll your own: [\"Title\"] [\"SubTitle\"] [\"Content\"] [\"ImageURL\"] [Buttons] ", HeroRYOMessage));
 
@@ -68,7 +68,7 @@ namespace TestBotCSharp
             cmdToTestDetail.Add("formatmd", new TestDetail("Display a [\"sample\"] selection of Markdown formats", FormatMDMessage));
             cmdToTestDetail.Add("thumb", new TestDetail("Display a Thumbnail Card", ThumbnailMessage));
 
-            cmdToTestDetail.Add("echo", new TestDetail("Echo you [\"string\"]", EchoMessage));
+            cmdToTestDetail.Add("echo", new TestDetail("Echo your [\"string\"]", EchoMessage));
             cmdToTestDetail.Add("mentions", new TestDetail("Show the @mentions you pass", MentionsTest));
             cmdToTestDetail.Add("members", new TestDetail("Show members of the team", MembersTest));
 
@@ -297,7 +297,9 @@ namespace TestBotCSharp
 
             foreach(var item in cmdToTestDetail)
             {
-                outText += "<br />**" + item.Key + "** - " + item.Value.about;
+                //If first char of Description is ! don't display it in help.  So we can have hidden test cases.
+                if (item.Value.about[0] != '!')
+                    outText += "<br />**" + item.Key + "** - " + item.Value.about;
             }
 
 
