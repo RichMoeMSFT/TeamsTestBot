@@ -661,6 +661,7 @@ namespace TestBotCSharp
                     "`code()`",
                     "---",
                     "emoji - &#128513; ",
+                    "This is a Table:\n\n|Table Col 1|Col2|Column 3|\n|---|---|---|\n| R1C1 | Row 1 Column 2 | Row 1 Col 3 |\n|R2C1|R2C2|R2C3|\n",
                     "* Unordered item 1<br />* Unordered item 2<br />* Unordered item 3",
                     "1. Ordered item 1<br />2. Ordered item 2<br />3. Ordered item 3",
 
