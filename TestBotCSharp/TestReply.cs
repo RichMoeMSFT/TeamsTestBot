@@ -52,7 +52,7 @@ namespace TestBotCSharp
             cmdToTestDetail.Add("help", new TestDetail("Show this message", HelpMessage));
 
             cmdToTestDetail.Add("hero1", new TestDetail("Hero Card with [3] buttons", Hero1Message));
-            cmdToTestDetail.Add("hero2", new TestDetail("Hero Card with no image and [3] buttons", Hero2Message));
+            cmdToTestDetail.Add("hero2", new TestDetail("!Hero Card with no image and [3] buttons", Hero2Message));
             cmdToTestDetail.Add("hero3", new TestDetail("!Hero Card with no content and [\"Optional Title\"]", Hero3Message));
             cmdToTestDetail.Add("hero4", new TestDetail("!Hero Card with no content and [\"Optional Title\"]", Hero4Message));
             cmdToTestDetail.Add("imgCard", new TestDetail("Hero Card with [\"img\"] as Content", ImgCardMessage));
@@ -70,6 +70,8 @@ namespace TestBotCSharp
 
             cmdToTestDetail.Add("echo", new TestDetail("Echo your [\"string\"]", EchoMessage));
             cmdToTestDetail.Add("mentions", new TestDetail("Show the @mentions you pass", MentionsTest));
+            cmdToTestDetail.Add("mentionUser", new TestDetail("@mentions the passed user", MentionUser));
+
             cmdToTestDetail.Add("members", new TestDetail("Show members of the team", MembersTest));
 
             cmdToTestDetail.Add("create", new TestDetail("Create a new conversation", CreateConversationTest));
@@ -792,6 +794,34 @@ namespace TestBotCSharp
             {
                 text += "<br />Text: " + m[i].Text + ", name: " + m[i].Mentioned.Name;
             }
+
+            replyMessage.Text = text;
+            replyMessage.TextFormat = TextFormatTypes.Markdown;
+
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private void MentionUser()
+        {
+            Mention[] m = sourceMessage.GetMentions();
+
+            string text = null;
+            Mention mentionedUser = null;
+            for (int i = 0; i < m.Length; i++)
+            {
+                if (m[i].Mentioned.Id != sourceMessage.Recipient.Id)
+                {
+                    //get the first non-bot user
+                    mentionedUser = m[i];
+                    break;
+                }
+
+            }
+
+            text = "Here is a mention:  Hello " + mentionedUser.Text;
+            replyMessage.Entities.Add((Entity) mentionedUser);
 
             replyMessage.Text = text;
             replyMessage.TextFormat = TextFormatTypes.Markdown;
