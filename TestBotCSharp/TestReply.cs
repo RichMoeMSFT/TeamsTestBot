@@ -16,19 +16,20 @@ namespace TestBotCSharp
     {
         private static string S_STANDARD_IMGURL = "https://skypeteamsbotstorage.blob.core.windows.net/bottestartifacts/panoramic.png";
 
-        private Activity sourceMessage;
-        private Activity replyMessage;
-        private List<string> args;
+        private Activity m_sourceMessage;
+        private Activity m_replyMessage;
+        private List<string> m_args;
 
         private string debugStr;
 
-        private int dumpRequested = 0;
+        private int m_dumpRequested = 0;
             static private int DUMPIN = 1;
             static private int DUMPOUT = 2;
             static private char CHAR_DUMP = '|';
 
-        private ConnectorClient connector;
+        private ConnectorClient m_connector;
         
+        //Dictionary Vlue - this is a combo of the about string and the command to run.
         public struct TestDetail
         {
             public string about;
@@ -42,53 +43,54 @@ namespace TestBotCSharp
 
         }
 
-        private readonly Dictionary<string, TestDetail> cmdToTestDetail;
+        private readonly Dictionary<string, TestDetail> m_cmdToTestDetail;
 
         public TestReply(ConnectorClient c)
         {
-            connector = c;
+            m_connector = c;
 
-            cmdToTestDetail = new Dictionary<string, TestDetail>(StringComparer.InvariantCultureIgnoreCase);
-            cmdToTestDetail.Add("help", new TestDetail("Show this message", HelpMessage));
+            m_cmdToTestDetail = new Dictionary<string, TestDetail>(StringComparer.InvariantCultureIgnoreCase);
+            m_cmdToTestDetail.Add("help", new TestDetail("Show this message", HelpMessage));
+            m_cmdToTestDetail.Add("!help", new TestDetail("!Show all commands, including hidden", HelpVerbose));
 
-            cmdToTestDetail.Add("hero1", new TestDetail("Hero Card with [3] buttons", Hero1Message));
-            cmdToTestDetail.Add("hero2", new TestDetail("!Hero Card with no image and [3] buttons", Hero2Message));
-            cmdToTestDetail.Add("hero3", new TestDetail("!Hero Card with no content and [\"Optional Title\"]", Hero3Message));
-            cmdToTestDetail.Add("hero4", new TestDetail("!Hero Card with no content and [\"Optional Title\"]", Hero4Message));
-            cmdToTestDetail.Add("imgCard", new TestDetail("Hero Card with [\"img\"] as Content", ImgCardMessage));
-            cmdToTestDetail.Add("heroRYO", new TestDetail("Roll your own: [\"Title\"] [\"SubTitle\"] [\"Content\"] [\"ImageURL\"] [Buttons] ", HeroRYOMessage));
+            m_cmdToTestDetail.Add("hero1", new TestDetail("Hero Card with [3] buttons", Hero1Message));
+            m_cmdToTestDetail.Add("hero2", new TestDetail("!Hero Card with no image and [3] buttons", Hero2Message));
+            m_cmdToTestDetail.Add("hero3", new TestDetail("!Hero Card with no content and [\"Optional Title\"]", Hero3Message));
+            m_cmdToTestDetail.Add("hero4", new TestDetail("!Hero Card with no content and [\"Optional Title\"]", Hero4Message));
+            m_cmdToTestDetail.Add("imgCard", new TestDetail("Hero Card with [\"img\"] as Content", ImgCardMessage));
+            m_cmdToTestDetail.Add("heroRYO", new TestDetail("Roll your own: [\"Title\"] [\"SubTitle\"] [\"Content\"] [\"ImageURL\"] [Buttons] ", HeroRYOMessage));
 
-            cmdToTestDetail.Add("heroInvoke", new TestDetail("Hero Card with [2] buttons using invoke action type", HeroInvokeMessage));
+            m_cmdToTestDetail.Add("heroInvoke", new TestDetail("Hero Card with [2] buttons using invoke action type", HeroInvokeMessage));
 
-            cmdToTestDetail.Add("carousel1", new TestDetail("Show a Carousel with different cards in each", Carousel1Message));
-            cmdToTestDetail.Add("carouselx", new TestDetail("Show a Carousel with [5] identical cards", CarouselxMessage));
+            m_cmdToTestDetail.Add("carousel1", new TestDetail("Show a Carousel with different cards in each", Carousel1Message));
+            m_cmdToTestDetail.Add("carouselx", new TestDetail("Show a Carousel with [5] identical cards", CarouselxMessage));
 
-            cmdToTestDetail.Add("signin", new TestDetail("Show a Signin Card",SignInMessage));
-            cmdToTestDetail.Add("formatxml", new TestDetail("Display a [\"sample\"] selection of XML formats", FormatXMLMessage));
-            cmdToTestDetail.Add("formatmd", new TestDetail("Display a [\"sample\"] selection of Markdown formats", FormatMDMessage));
-            cmdToTestDetail.Add("thumb", new TestDetail("Display a Thumbnail Card", ThumbnailMessage));
+            m_cmdToTestDetail.Add("signin", new TestDetail("Show a Signin Card, with button to launch [URL]",SignInMessage));
+            m_cmdToTestDetail.Add("formatxml", new TestDetail("Display a [\"sample\"] selection of XML formats", FormatXMLMessage));
+            m_cmdToTestDetail.Add("formatmd", new TestDetail("Display a [\"sample\"] selection of Markdown formats", FormatMDMessage));
+            m_cmdToTestDetail.Add("thumb", new TestDetail("Display a Thumbnail Card", ThumbnailMessage));
 
-            cmdToTestDetail.Add("echo", new TestDetail("Echo your [\"string\"]", EchoMessage));
-            cmdToTestDetail.Add("mentions", new TestDetail("Show the @mentions you pass", MentionsTest));
-            cmdToTestDetail.Add("mentionUser", new TestDetail("@mentions the passed user", MentionUser));
+            m_cmdToTestDetail.Add("echo", new TestDetail("Echo your [\"string\"]", EchoMessage));
+            m_cmdToTestDetail.Add("mentions", new TestDetail("Show the @mentions you pass", MentionsTest));
+            m_cmdToTestDetail.Add("mentionUser", new TestDetail("@mentions the passed user", MentionUser));
 
-            cmdToTestDetail.Add("members", new TestDetail("Show members of the team", MembersTest));
+            m_cmdToTestDetail.Add("members", new TestDetail("Show members of the team", MembersTest));
 
-            cmdToTestDetail.Add("create", new TestDetail("Create a new conversation", CreateConversationTest));
+            m_cmdToTestDetail.Add("create", new TestDetail("Create a new conversation", CreateConversationTest));
 
-            cmdToTestDetail.Add("dumpin", new TestDetail("Display the incoming JSON", ActivityDumpIn));
-            cmdToTestDetail.Add("dumpout", new TestDetail("Display the outgoing JSON", ActivityDumpOut));
+            m_cmdToTestDetail.Add("dumpin", new TestDetail("Display the incoming JSON", ActivityDumpIn));
+            m_cmdToTestDetail.Add("dumpout", new TestDetail("Display the outgoing JSON", ActivityDumpOut));
         }
 
         /// <summary>
-        /// Remove arg[0] from message string
+        /// Remove arg[0] from message string, which should be the command itself.  Used in EchoTest for ow
         /// </summary>
         /// <returns></returns>
         private string StripCommandFromMessage()
         {
-            string message = sourceMessage.Text;
+            string message = m_sourceMessage.Text;
 
-            message = message.Replace(args[0], "");
+            message = message.Replace(m_args[0], "");
 
             return message;
         }
@@ -97,16 +99,16 @@ namespace TestBotCSharp
         /// Strips out the bot name, which is passed as part of message when bot is referenced in-channel.
         /// </summary>
         /// <param name="message">the Activity text</param>
-        /// <returns></returns>
-        string StripBotNameFromText (string message)
+        /// <returns>the message without the bot, if mentioned</returns>
+        private string StripBotNameFromText (string message)
         {
             var messageText = message;
 
-            Mention[] m = sourceMessage.GetMentions();
+            Mention[] m = m_sourceMessage.GetMentions();
 
             for (int i = 0;i < m.Length;i++)
             {
-                if (m[i].Mentioned.Id == sourceMessage.Recipient.Id)
+                if (m[i].Mentioned.Id == m_sourceMessage.Recipient.Id)
                 {
                     if (m[i].Text != null) //the Text field contains the full <at>name</at> string so is useful for stripping out.  If it's null, though, the bot name was passed silently, for e.g. bot-in-channel imBack
                         messageText = messageText.Replace(m[i].Text, "");
@@ -118,27 +120,58 @@ namespace TestBotCSharp
         }
 
         /// <summary>
-        /// 
+        /// Safe return of arg# as String
+        /// </summary>
+        /// <param name="argnum"></param>
+        /// <returns>String contained in arg# or null, if no arg</returns>
+        private string GetArg(int argnum)
+        {
+            //Count 1 based, argnum is 0 based
+            if (m_args.Count > argnum)
+                return m_args[argnum];
+            else
+                return null;
+
+        }
+
+
+        /// <summary>
+        /// Safe return of arg# as Int
+        /// </summary>
+        /// <param name="argnum"></param>
+        /// <returns>Int contained in arg# or -1, if no arg</returns>
+        private int GetArgInt(int argnum)
+        {
+
+            if (m_args.Count > argnum)
+                return Convert.ToInt32(m_args[argnum]);
+            else
+                return -1;
+
+        }
+
+        /// <summary>
+        /// Core dispatcher.  Parse the messageIn text, stripping out bot name if included and assuming the first string is the command.  Split rest of string into optional args for comands.
         /// </summary>
         /// <param name="messageIn"></param>
         /// <returns></returns>
         public Activity CreateMessage(Activity messageIn)
         {
-            sourceMessage = messageIn;
-            string messageText = StripBotNameFromText(messageIn.Text);
+            m_sourceMessage = messageIn; //Store off so we don't pass around
+            string messageText = StripBotNameFromText(messageIn.Text); //This will strip out the botname if the message came via channel and therefore it's mentioned
 
             //Split into arguments.  If in quotes, treat entire string as a single arg.
-            args = messageText.Split('"')
+            m_args = messageText.Split('"')
                                  .Select((element, index) => index % 2 == 0  // If even index
                                                        ? element.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)  // Split the item
                                                        : new string[] { element })  // Keep the entire item
                                  .SelectMany(element => element).ToList();
 
             //one more pass to remove empties and whitespace
-            args = args.Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
-            for (int i = 0;i < args.Count;i++)
+            m_args = m_args.Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
+            for (int i = 0;i < m_args.Count;i++)
             {
-                args[i] = args[i].Trim();
+                m_args[i] = m_args[i].Trim();
             }
 
 #if false
@@ -149,38 +182,37 @@ namespace TestBotCSharp
             }
 
 #endif
-            replyMessage = messageIn.CreateReply();
+            //Create the message as a simple Reply
+            m_replyMessage = messageIn.CreateReply();
 
 
-            if (args.Count > 0)
+            if (m_args.Count > 0)
             {
-                string testcommand = args[0];
-
-                //Trace.WriteLine("Received test command: " + testcommand);
+                string testcommand = m_args[0];
 
                 //Scan for dump tag - DumpIn = prepend, DumpOut = postpend
                 if (testcommand[0] == CHAR_DUMP)
                 {
                     testcommand = testcommand.Substring(1);
-                    dumpRequested = DUMPIN;
+                    m_dumpRequested = DUMPIN;
                 }
                 else
                 {
                     if (testcommand[testcommand.Length-1] == CHAR_DUMP)
                     {
                         testcommand = testcommand.Remove(testcommand.Length - 1);
-                        dumpRequested = DUMPOUT;
+                        m_dumpRequested = DUMPOUT;
                     }
                 }
 
-
-                if (cmdToTestDetail.ContainsKey(testcommand))
+                //Dispatch the command - check dictionary for command and run the appropriate function.
+                if (m_cmdToTestDetail.ContainsKey(testcommand))
                 {
-                    cmdToTestDetail[testcommand].buildMessage();
+                    m_cmdToTestDetail[testcommand].buildMessage();
                 }
                 else
                 {
-                    dumpRequested = DUMPIN;
+                    m_dumpRequested = DUMPIN;
                     HelpMessage();
                 }
 
@@ -191,62 +223,12 @@ namespace TestBotCSharp
             }
 
 
-            return replyMessage;
-        }
-        
-        /// <summary>
-        /// 
-        /// </summary>
-        private void CreateConversationTest()
-        {
-
-            //Check to validate this is in group context.
-            if (sourceMessage.Conversation.IsGroup != true)
-            {
-                replyMessage.Text = "CreateConversation only work in channel context at this time";
-                return;
-            }
-
-            var channelData = sourceMessage.ChannelData;
-
-
-            replyMessage.Text = "This is a new Conversation created with CreateConversationAsync().";
-            replyMessage.Text += "<br/><br/> ChannelID = " + sourceMessage.ChannelId;
-            replyMessage.Text += "<br/>ConversationID (in) = " + sourceMessage.Conversation.Id;
-
-
-            //Trigger a new conversation to be created in MessagesController:
-            replyMessage.Conversation = null;
-
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        private void MembersTest()
-        {
-
-            //Check to validate this is in group context.
-            if (sourceMessage.Conversation.IsGroup != true)
-            {
-                replyMessage.Text = "GetConversationMembers only work in channel context at this time";
-                return;
-            }
-            replyMessage.Text = "These are the member userids returned by the GetConversationMembers() function";
-
-            ChannelAccount[] members = connector.Conversations.GetConversationMembers(sourceMessage.Conversation.Id);
-
-            replyMessage.Text = "These are the member userids returned by the GetConversationMembers() function";
-
-            for (int i = 0; i < members.Length; i++)
-            {
-                replyMessage.Text += "<br />" + members[i].Id + " : " + members[i].Name;
-            }
+            return m_replyMessage;
         }
 
 
         /// <summary>
-        /// Show the payload for either the source or reply message
+        /// Show the payload for either the source or reply message.  The flag m_dumpRequested is set in the message parsing, based on the location of the pipe character.
         /// </summary>
         /// <param name="messageIn">The message that the bot received</param>
         /// <param name="messageOut">The test message that the bot created</param>
@@ -256,12 +238,12 @@ namespace TestBotCSharp
 
             Activity temp = messageIn.CreateReply();
 
-            if (dumpRequested == 1)
+            if (m_dumpRequested == 1)
             {
                 temp.Text = ActivityDumper.ActivityDump(messageIn);
             } else
             {
-                if (dumpRequested == 2)
+                if (m_dumpRequested == 2)
                 {
                     temp.Text = ActivityDumper.ActivityDump(messageOut);
                 }
@@ -275,12 +257,14 @@ namespace TestBotCSharp
 
         }
 
+
         /// <summary>
-        /// Display a list of all the tests supported
+        /// Show a list of all available commands
         /// </summary>
-        private void HelpMessage ()
+        /// <param name="showAll">set to True to show hidden tests as well</param>
+        private void HelpDisplay (bool showAll = false)
         {
-            var outText = "You entered [" + sourceMessage.Text + "]<br />";
+            var outText = "You entered [" + m_sourceMessage.Text + "]<br />";
 
 #if false
             for (int i = 0; i < args.Count; i++)
@@ -297,74 +281,106 @@ namespace TestBotCSharp
 
             outText += "<br />** A list of all valid tests.** <br /> <br />  Values in [] can be changed by adding appropriate arguments, e.g. 'hero1 5' makes a hero1 card with 5 buttons; 'hero3 \"This is a Title\"' uses that string as the title.<br /> <br />You can prepend or postpend '|' (pipe) to dump the payload for incoming or outgoing message, respectively. <br /> <br /> ---";
 
-            foreach(var item in cmdToTestDetail)
+            foreach(var item in m_cmdToTestDetail)
             {
-                //If first char of Description is ! don't display it in help.  So we can have hidden test cases.
-                if (item.Value.about[0] != '!')
+                //If first char of Description is ! don't display it in help, unless command has ! as first char (e.g. !help).  So we can have hidden test cases.
+                if (showAll || item.Value.about[0] != '!')
                     outText += "<br />**" + item.Key + "** - " + item.Value.about;
             }
 
-
-            replyMessage.Text = outText;
+            m_replyMessage.Text = outText;
 
         }
 
+        private void HelpMessage()
+        {
+            HelpDisplay(false);
+        }
+        private void HelpVerbose()
+        {
+            HelpDisplay(true);
+        }
+
         /// <summary>
-        /// 
+        /// Simply pass in the source as the Activity dump source. This is for the appropriate command, not for |
         /// </summary>
         private void ActivityDumpIn ()
         {
-            replyMessage.Text = ActivityDumper.ActivityDump(sourceMessage);
-            replyMessage.TextFormat = TextFormatTypes.Markdown;
+            m_replyMessage.Text = ActivityDumper.ActivityDump(m_sourceMessage);
+            m_replyMessage.TextFormat = TextFormatTypes.Markdown;
            
         }
 
         /// <summary>
-        /// 
+        /// Simply pass in the reply as the Activity dump source.  This is for the appropriate command, not for |
         /// </summary>
         private void ActivityDumpOut()
         {
-            replyMessage.Text = "Dump out text";
-            replyMessage.Text = ActivityDumper.ActivityDump(replyMessage);
-            replyMessage.TextFormat = TextFormatTypes.Markdown;
+            m_replyMessage.Text = "Dump out text";
+            m_replyMessage.Text = ActivityDumper.ActivityDump(m_replyMessage);
+            m_replyMessage.TextFormat = TextFormatTypes.Markdown;
         }
+
 
         /// <summary>
-        /// 
+        /// Helper function to create buttons using ImBack action
         /// </summary>
-        /// <param name="argnum"></param>
+        /// <param name="num"></param>
         /// <returns></returns>
-        private string GetArg(int argnum)
+        private CardAction[] CreateImBackButtons(int num)
         {
-            //Count 1 based, argnum is 0 based
-            if (args.Count > argnum)
-                return args[argnum];
-            else
-                return null;
+            if (num < 1) return null;
 
+            var buttons = new CardAction[num];
+            for (int i = 0; i < num; i++)
+            {
+                buttons[i] = new CardAction()
+                {
+                    Title = "ImBack " + i,
+                    Type = ActionTypes.ImBack,
+                    Value = "ImBack " + i
+                };
+            }
+
+            return buttons;
         }
+
 
         /// <summary>
-        /// 
+        /// Helper function to create buttons using Invoke action
         /// </summary>
-        /// <param name="argnum"></param>
+        /// <param name="num"></param>
         /// <returns></returns>
-        private int GetArgInt(int argnum)
+        private CardAction[] CreateInvokeButtons(int num)
         {
+            if (num < 1) return null;
 
-            if (args.Count > argnum)
-                return Convert.ToInt32(args[argnum]);
-            else
-                return -1;
+            var buttons = new CardAction[num];
+            for (int i = 0; i < num; i++)
+            {
+                buttons[i] = new CardAction()
+                {
+                    Title = "Invoke " + i,
+                    Type = "invoke",
+                    Value = "{\"invokeValue:\": \"" + i + "\"}"
+                };
+            }
 
+            return buttons;
         }
 
+
+
+
+        /// <summary>
+        /// Hero card using Invoke buttons
+        /// </summary>
         private void HeroInvokeMessage()
         {
             int numberOfButtons = GetArgInt(1);
             if (numberOfButtons == -1) numberOfButtons = 2;
 
-            replyMessage.Attachments = new List<Attachment>()
+            m_replyMessage.Attachments = new List<Attachment>()
             {
 
                 GetHeroCardAttachment(
@@ -372,11 +388,11 @@ namespace TestBotCSharp
                     "Hero card with invoke buttons",
                     "Bacon ipsum dolor amet flank ground round chuck pork loin. Sirloin meatloaf boudin meatball ham hock shoulder capicola tri-tip sausage biltong cupim",
                     null, 
-                    CreateButtons(numberOfButtons),
-                    true /* trigger invoke */
+                    CreateInvokeButtons(numberOfButtons)
                 )
             };
         }
+
         /// <summary>
         /// 
         /// </summary>
@@ -385,7 +401,7 @@ namespace TestBotCSharp
             int numberOfButtons = GetArgInt(1);
             if (numberOfButtons == -1) numberOfButtons = 3;
 
-            replyMessage.Attachments = new List<Attachment>()
+            m_replyMessage.Attachments = new List<Attachment>()
             {
 
                 GetHeroCardAttachment(
@@ -393,29 +409,10 @@ namespace TestBotCSharp
                     "Subtitle or breadcrumb",
                     "Bacon ipsum dolor amet flank ground round chuck pork loin. Sirloin meatloaf boudin meatball ham hock shoulder capicola tri-tip sausage biltong cupim",
                     new string[] { S_STANDARD_IMGURL },
-                    //new string[] { "View in article", "See more like this", "/test ipsum" }
-                    CreateButtons(numberOfButtons)
+                    CreateImBackButtons(numberOfButtons)
                 )
             };
 
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="num"></param>
-        /// <returns></returns>
-        private string[] CreateButtons(int num)
-        {
-            if (num < 1) return null;
-
-            var buttons = new string[num];
-            for(int i = 1; i <=num;i++)
-            {
-                buttons[(i-1)] = "Button " + i;
-            }
-
-            return buttons;
         }
 
 
@@ -426,14 +423,14 @@ namespace TestBotCSharp
 
 
             //No Image, 3 buttons
-            replyMessage.Attachments = new List<Attachment>()
+            m_replyMessage.Attachments = new List<Attachment>()
             {
                 GetHeroCardAttachment(
                     "Subject Title",
                     "Subtitle or breadcrumb",
                     "Bacon ipsum dolor amet flank ground round chuck pork loin. Sirloin meatloaf boudin meatball ham hock shoulder capicola tri-tip sausage biltong cupim",
                     null,
-                    CreateButtons(numberOfButtons)
+                    CreateImBackButtons(numberOfButtons)
                 )
             };
         }
@@ -442,14 +439,14 @@ namespace TestBotCSharp
         {
             string title = GetArg(1);
 
-            replyMessage.Attachments = new List<Attachment>()
+            m_replyMessage.Attachments = new List<Attachment>()
             {
                 GetHeroCardAttachment(
                     title,
                     null,
                     null,
                     null,
-                    CreateButtons(5)
+                    CreateImBackButtons(5)
                 )
             };
         }
@@ -462,14 +459,14 @@ namespace TestBotCSharp
             string imgURL = GetArg(1);
             if (imgURL == null) imgURL = S_STANDARD_IMGURL;
 
-            replyMessage.Attachments = new List<Attachment>()
+            m_replyMessage.Attachments = new List<Attachment>()
             {
                 GetHeroCardAttachment(
                     null,
                     null,
                     null,
                     new string[] { imgURL  },
-                    CreateButtons(5)
+                    CreateInvokeButtons(5)
                 )
             };
         }
@@ -485,83 +482,94 @@ namespace TestBotCSharp
             string imgURL = GetArg(4);
             int buttonCount = GetArgInt(5);
 
-            replyMessage.Attachments = new List<Attachment>()
+            m_replyMessage.Attachments = new List<Attachment>()
             {
                 GetHeroCardAttachment(
                     title,
                     subTitle,
                     content,
                     (imgURL == null ? null : new string[] { imgURL  }),
-                    CreateButtons(buttonCount)
+                    CreateImBackButtons(buttonCount)
                 )
             };
 
         }
 
+        /// <summary>
+        /// This will display an Img in the Content section of the Attachment, instead of the Image section.
+        /// </summary>
         private void ImgCardMessage()
         {
 
-            replyMessage.Attachments = new List<Attachment>()
+            string imgURL = GetArg(1);
+            if (imgURL == null) imgURL = S_STANDARD_IMGURL;
+
+
+            m_replyMessage.Attachments = new List<Attachment>()
             {
                 GetHeroCardAttachment(
                     "Card with image containing no width or height",
                     null,
-                    "<img src='https://skypeteamsbotstorage.blob.core.windows.net/bottestartifacts/panoramic.png'/>",
+                    "<img src='" + imgURL + "'/>",
                     null,
-                    new string[] { "View in article", "See more like this", "Action 3", "Action 4", "Action 5" })
+                    CreateImBackButtons(2)
+                )
             };
 
         }
 
 
         /// <summary>
-        /// 
+        /// Carousel with 5 different cards
         /// </summary>
         private void Carousel1Message()
         {
 
-            replyMessage.Attachments = new List<Attachment>()
+            m_replyMessage.Attachments = new List<Attachment>()
             {
                 GetHeroCardAttachment(
                     null,
                     null,
                     null,
                     new string[] { S_STANDARD_IMGURL },
-                    new string[] { "View in article", "See more like this", "Action 3", "Action 4", "Action 5" }
+                    CreateImBackButtons(5) 
                 ),
                 GetHeroCardAttachment(
-                    "Subject Title Caraousel 1",
+                    "Subject Title Carousel 2",
                     null,
                     null,
                     null,
-                    new string[] { "View in article", "See more like this", "Action 3", "Action 4", "Action 5" }
-                ),
+                    CreateImBackButtons(4) 
+                 ),
                  GetHeroCardAttachment(
-                    "Subject Title Caraousel 1",
+                    "Subject Title Carousel 3",
                     "Subtitle or breadcrumb",
                     "Bacon ipsum dolor amet flank ground round chuck pork loin. Sirloin meatloaf boudin meatball ham hock shoulder capicola tri-tip sausage biltong cupim",
                     null,
-                    new string[] { "View in article", "See more like this", "Action 3", "Action 4", "Action 5" }
+                    CreateInvokeButtons(3)
                 ),
                 GetHeroCardAttachment(
-                    "Subject Title Caraousel 1",
+                    "Subject Title Carousel 4",
                     "Subtitle or breadcrumb",
                     "Bacon ipsum dolor amet flank ground round chuck pork loin. Sirloin meatloaf boudin meatball ham hock shoulder capicola tri-tip sausage biltong cupim",
                     new string[] { S_STANDARD_IMGURL },
-                    new string[] { "View in article", "See more like this", "Action 3" }
+                    CreateImBackButtons(2)
                 ),
                 GetHeroCardAttachment(
-                    "Subject Title Caraousel 1",
+                    "Subject Title Caraousel 5",
                     null,
                     "Bacon ipsum dolor amet flank ground round chuck pork loin. Sirloin meatloaf boudin meatball ham hock shoulder capicola tri-tip sausage biltong cupim",
                     null,
-                    new string[] { "View in article", "See more like this", "Action 3" }
+                    CreateImBackButtons(1)
                 )                
            };
-            replyMessage.AttachmentLayout = AttachmentLayoutTypes.Carousel;
+            m_replyMessage.AttachmentLayout = AttachmentLayoutTypes.Carousel;
 
         }
 
+        /// <summary>
+        /// Carousel with 5 duplicate cards
+        /// </summary>
         private void CarouselxMessage()
         {
             int numberOfCards = GetArgInt(1);
@@ -569,10 +577,11 @@ namespace TestBotCSharp
 
             var card = GetHeroCardAttachment(
                 "Subject Title Carouselx",
-                "Note: Teams currentlysupposrts a max of 5 cards",
+                "Note: Teams currently supposrts a max of 5 cards",
                 "Bacon ipsum dolor amet flank ground round chuck pork loin. Sirloin meatloaf boudin meatball ham hock shoulder capicola tri-tip sausage biltong cupim",
                 new string[] { S_STANDARD_IMGURL },
-                new string[] { "View in article", "See more like this", "Action 3", "Action 4", "Action 5", "Action 6", "Action 7" }); // Teams only support 6 actions max. Send more.
+                CreateImBackButtons(7)  // Teams only support 6 actions max. Send more.
+             );
 
             var attachments = new List<Attachment>();
 
@@ -581,35 +590,45 @@ namespace TestBotCSharp
                 attachments.Add(card);
             }
 
-            replyMessage.Attachments = attachments;
-            replyMessage.AttachmentLayout = AttachmentLayoutTypes.Carousel;
+            m_replyMessage.Attachments = attachments;
+            m_replyMessage.AttachmentLayout = AttachmentLayoutTypes.Carousel;
 
         }
 
+
+        /// <summary>
+        /// Sign-in Card type
+        /// </summary>
         private void SignInMessage()
         {
+            string openURL = GetArg(1);
+            if (openURL == null) openURL = "https://www.bing.com";
+
             var card = new Attachment()
             {
                 ContentType = SigninCard.ContentType,
                 Content = new SigninCard()
                 {
-                    Text = "Time to sign in",
+                    Text = "Sample Sign-in with OpenURL action (launch " + openURL + ")",
                     Buttons = new List<CardAction>()
                     {
                         new CardAction()
                         {
-                            Title = "Please sign in",
+                            Title = "Sign In (OpenURL)",
                             Type = ActionTypes.OpenUrl,
-                            Value = "https://www.bing.com"
+                            Value = openURL
                         }
                     }
                 }
             };
-            replyMessage.Attachments = new List<Attachment> { card };
+            m_replyMessage.Attachments = new List<Attachment> { card };
 
         }
 
  
+        /// <summary>
+        /// Test XML formatting
+        /// </summary>
         private void FormatXMLMessage()
         {
             var text = GetArg(1);
@@ -638,8 +657,8 @@ namespace TestBotCSharp
                 text = string.Join(string.Empty, tmp);
             }
 
-            replyMessage.Text = text;
-            replyMessage.TextFormat = TextFormatTypes.Xml;
+            m_replyMessage.Text = text;
+            m_replyMessage.TextFormat = TextFormatTypes.Xml;
         }
 
         /// <summary>
@@ -674,8 +693,8 @@ namespace TestBotCSharp
                 text = string.Join("<br />", tmp);
             }
 
-            replyMessage.Text = text;
-            replyMessage.TextFormat = TextFormatTypes.Markdown;
+            m_replyMessage.Text = text;
+            m_replyMessage.TextFormat = TextFormatTypes.Markdown;
         }
 
 
@@ -684,22 +703,17 @@ namespace TestBotCSharp
         /// </summary>
         private void EchoMessage()
         {
-
-            /*
-            var text = GetArg(1);
-            if (text == null)
-            {
-                text = "Input your message and it will display here in Markdown.";
-            }
-            */
-
+     
             var text = StripCommandFromMessage();
 
-            replyMessage.Text = text;
-            replyMessage.TextFormat = TextFormatTypes.Markdown;
+            m_replyMessage.Text = text;
+            m_replyMessage.TextFormat = TextFormatTypes.Markdown;
         }
 
 
+        /// <summary>
+        /// 
+        /// </summary>
         private void ThumbnailMessage()
         {
 
@@ -710,8 +724,100 @@ namespace TestBotCSharp
                 new string[] { "https://skypeteamsbotstorage.blob.core.windows.net/bottestartifacts/sandwich_thumbnail.png" },
                 new string[] { "View in article", "See more like this" });
 
-            replyMessage.Attachments = new List<Attachment> { card };
+            m_replyMessage.Attachments = new List<Attachment> { card };
 
+
+        }
+
+
+        /// <summary>
+        /// To test CreateConversationAsync set the Conversation to null, which triggers the creation of a new one in the MessageConroller post flow
+        /// </summary>
+        private void CreateConversationTest()
+        {
+
+            //Check to validate this is in group context.
+            if (m_sourceMessage.Conversation.IsGroup != true)
+            {
+                m_replyMessage.Text = "CreateConversation only work in channel context at this time";
+                return;
+            }
+
+            m_replyMessage.Text = "This is a new Conversation created with CreateConversationAsync().";
+            m_replyMessage.Text += "<br/><br/> ChannelID = " + m_sourceMessage.ChannelId;
+            m_replyMessage.Text += "<br/>ConversationID (in) = " + m_sourceMessage.Conversation.Id;
+
+
+            //Trigger a new conversation to be created in MessagesController:
+            m_replyMessage.Conversation = null;
+
+        }
+
+        /// <summary>
+        /// Retrieve and display all Team Members, leveraging the GetConversationMembers function from BotFramework.  Note that this only has relevance in a Group context.
+        /// </summary>
+        private void MembersTest()
+        {
+
+            //Check to validate this is in group context.
+            if (m_sourceMessage.Conversation.IsGroup != true)
+            {
+                m_replyMessage.Text = "GetConversationMembers only work in channel context at this time";
+                return;
+            }
+
+            ChannelAccount[] members = m_connector.Conversations.GetConversationMembers(m_sourceMessage.Conversation.Id);
+
+            m_replyMessage.Text = "These are the member userids returned by the GetConversationMembers() function";
+
+            for (int i = 0; i < members.Length; i++)
+            {
+                m_replyMessage.Text += "<br />" + members[i].Id + " : " + members[i].Name;
+            }
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        private void MentionsTest()
+        {
+            Mention[]  m = m_sourceMessage.GetMentions();
+
+            var text = "You mentioned " + m.Length + " entities";
+            for (int i = 0; i < m.Length; i++)
+            {
+                text += "<br />Text: " + m[i].Text + ", name: " + m[i].Mentioned.Name;
+            }
+
+            m_replyMessage.Text = text;
+            m_replyMessage.TextFormat = TextFormatTypes.Markdown;
+
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private void MentionUser()
+        {
+            Mention[] m = m_sourceMessage.GetMentions();
+
+            string text = null;
+            Mention mentionedUser = null;
+            for (int i = 0; i < m.Length; i++)
+            {
+                if (m[i].Mentioned.Id != m_sourceMessage.Recipient.Id)
+                {
+                    //get the first non-bot user
+                    mentionedUser = m[i];
+                    break;
+                }
+
+            }
+
+            text = "Here is a mention:  Hello " + mentionedUser.Text;
+            m_replyMessage.Entities.Add((Entity) mentionedUser);
+
+            m_replyMessage.Text = text;
+            m_replyMessage.TextFormat = TextFormatTypes.Markdown;
 
         }
 
@@ -721,11 +827,10 @@ namespace TestBotCSharp
         /// <param name="title">Title of the card</param>
         /// <param name="subTitle">Subtitle of the card</param>
         /// <param name="text">Text of the card</param>
-
         /// <param name="images">Images in the card</param>
         /// <param name="buttons">Buttons in the card</param>
         /// <returns>Card attachment</returns>
-        private static Attachment GetHeroCardAttachment(string title, string subTitle, string text, string[] images, string[] buttons, bool useInvoke = false)
+        private static Attachment GetHeroCardAttachment(string title, string subTitle, string text, string[] images, CardAction[] buttons, bool useInvoke = false)
         {
             var heroCard = new HeroCard()
             {
@@ -752,6 +857,8 @@ namespace TestBotCSharp
             // Set buttons
             if (buttons != null)
             {
+                heroCard.Buttons = buttons;
+                /*
                 foreach (var btn in buttons)
                 {
                     if (useInvoke)
@@ -773,6 +880,7 @@ namespace TestBotCSharp
                         });
                     }
                 }
+                */
             }
 
             return new Attachment()
@@ -782,51 +890,6 @@ namespace TestBotCSharp
             };
         }
 
-        /// <summary>
-        /// 
-        /// </summary>
-        private void MentionsTest()
-        {
-            Mention[]  m = sourceMessage.GetMentions();
-
-            var text = "You mentioned " + m.Length + " entities";
-            for (int i = 0; i < m.Length; i++)
-            {
-                text += "<br />Text: " + m[i].Text + ", name: " + m[i].Mentioned.Name;
-            }
-
-            replyMessage.Text = text;
-            replyMessage.TextFormat = TextFormatTypes.Markdown;
-
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        private void MentionUser()
-        {
-            Mention[] m = sourceMessage.GetMentions();
-
-            string text = null;
-            Mention mentionedUser = null;
-            for (int i = 0; i < m.Length; i++)
-            {
-                if (m[i].Mentioned.Id != sourceMessage.Recipient.Id)
-                {
-                    //get the first non-bot user
-                    mentionedUser = m[i];
-                    break;
-                }
-
-            }
-
-            text = "Here is a mention:  Hello " + mentionedUser.Text;
-            replyMessage.Entities.Add((Entity) mentionedUser);
-
-            replyMessage.Text = text;
-            replyMessage.TextFormat = TextFormatTypes.Markdown;
-
-        }
 
         /// <summary>
         /// Builds and returns a <see cref="ThumbnailCard"/> attachment using the supplied info
