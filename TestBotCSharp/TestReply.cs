@@ -80,6 +80,22 @@ namespace TestBotCSharp
 
             m_cmdToTestDetail.Add("dumpin", new TestDetail("Display the incoming JSON", ActivityDumpIn));
             m_cmdToTestDetail.Add("dumpout", new TestDetail("Display the outgoing JSON", ActivityDumpOut));
+
+        }
+
+        /// <summary>
+        /// Convert emoji code into surrogate pair
+        /// </summary>
+        /// <param name="emoji"></param>
+        /// <returns></returns>
+        private string EmojiToSurrogatePair(int emoji)
+        {
+            double H = Math.Floor((double)((emoji - 0x10000) / 0x400)) + 0xD800;
+            double L = ((emoji - 0x10000) % 0x400) + 0xDC00;
+            char ch = (char)H;
+            char cl = (char)L;
+
+            return ch.ToString() + cl.ToString();
         }
 
         /// <summary>
@@ -646,7 +662,7 @@ namespace TestBotCSharp
                         "<strike>Strike</strike>",
                         "<pre>code() using pre</pre>",
                         "<hr />",
-                        "emoji - &#128513; ",
+                        "emoji - " + EmojiToSurrogatePair(0x1F37D),
                         "<ul><li>Unordered item 1</li><li>Unordered item 2</li><li>Unordered item 3</li></ul>",
                         "<ol><li>Ordered item 1</li><li>Ordered item 2</li><li>Ordered item 3</li></oll>",
  
@@ -681,7 +697,7 @@ namespace TestBotCSharp
                     "~~Strike~~",
                     "`code()`",
                     "---",
-                    "emoji - &#128513; ",
+                    "emoji - " + EmojiToSurrogatePair(0x1f37a), //\uD83C\uDF20 ",
                     "This is a Table:\n\n|Table Col 1|Col2|Column 3|\n|---|---|---|\n| R1C1 | Row 1 Column 2 | Row 1 Col 3 |\n|R2C1|R2C2|R2C3|\n",
                     "* Unordered item 1<br />* Unordered item 2<br />* Unordered item 3",
                     "1. Ordered item 1<br />2. Ordered item 2<br />3. Ordered item 3",
@@ -699,11 +715,12 @@ namespace TestBotCSharp
 
 
         /// <summary>
-        /// 
+        /// Simple echo back with Markdown
         /// </summary>
         private void EchoMessage()
         {
      
+            //Remove "echo" and take everything else
             var text = StripCommandFromMessage();
 
             m_replyMessage.Text = text;
