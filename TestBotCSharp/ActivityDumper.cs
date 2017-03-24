@@ -16,8 +16,8 @@ namespace TestBotCSharp
             {
                 string str = JsonConvert.SerializeObject(act,Formatting.Indented);
                 //Replace /r/n with /Br
-                str = str.Replace("<", "«");
-                str = str.Replace(">", "»");
+                str = str.Replace("<", "&#60;");
+                str = str.Replace(">", "&#62;");
                 str = str.Replace("\r\n", "<br />");
                 
                 return str;
