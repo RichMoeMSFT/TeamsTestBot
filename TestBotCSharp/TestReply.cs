@@ -205,21 +205,21 @@ namespace TestBotCSharp
             if (m_args.Count > 0)
             {
                 string testcommand = m_args[0];
+                m_dumpRequested = 0;
 
                 //Scan for dump tag - DumpIn = prepend, DumpOut = postpend
                 if (testcommand[0] == CHAR_DUMP)
                 {
                     testcommand = testcommand.Substring(1);
-                    m_dumpRequested = DUMPIN;
+                    m_dumpRequested += DUMPIN;
                 }
-                else
+
+                if (testcommand[testcommand.Length-1] == CHAR_DUMP)
                 {
-                    if (testcommand[testcommand.Length-1] == CHAR_DUMP)
-                    {
-                        testcommand = testcommand.Remove(testcommand.Length - 1);
-                        m_dumpRequested = DUMPOUT;
-                    }
+                    testcommand = testcommand.Remove(testcommand.Length - 1);
+                    m_dumpRequested += DUMPOUT;
                 }
+                
 
                 //Dispatch the command - check dictionary for command and run the appropriate function.
                 if (m_cmdToTestDetail.ContainsKey(testcommand))
@@ -252,22 +252,28 @@ namespace TestBotCSharp
         public Activity DumpMessage(Activity messageIn, Activity messageOut)
         {
 
+            if (m_dumpRequested == 0) return null;
+
             Activity temp = messageIn.CreateReply();
 
-            if (m_dumpRequested == 1)
+            temp.Text = "";
+
+            if ((m_dumpRequested & 1) == 1)
             {
-                temp.Text = ActivityDumper.ActivityDump(messageIn);
-            } else
-            {
-                if (m_dumpRequested == 2)
-                {
-                    temp.Text = ActivityDumper.ActivityDump(messageOut);
-                }
-                else
-                {
-                    return null;
-                }
+                temp.Text += "<b>ActivityIn:</b><br/>";
+                temp.Text += ActivityDumper.ActivityDump(messageIn);
             }
+
+            if (m_dumpRequested == 3) temp.Text += "<br />< hr ><br />"; //separator if both
+
+            if ((m_dumpRequested & 2) == 2)
+            {
+                temp.Text += "<b>ActivityOut:</b><br/>";
+                temp.Text += ActivityDumper.ActivityDump(messageOut);
+
+            }
+            
+            temp.TextFormat = TextFormatTypes.Xml;
 
             return temp;
 
@@ -323,7 +329,7 @@ namespace TestBotCSharp
         private void ActivityDumpIn ()
         {
             m_replyMessage.Text = ActivityDumper.ActivityDump(m_sourceMessage);
-            m_replyMessage.TextFormat = TextFormatTypes.Markdown;
+            m_replyMessage.TextFormat = TextFormatTypes.Xml;
            
         }
 
@@ -334,7 +340,7 @@ namespace TestBotCSharp
         {
             m_replyMessage.Text = "Dump out text";
             m_replyMessage.Text = ActivityDumper.ActivityDump(m_replyMessage);
-            m_replyMessage.TextFormat = TextFormatTypes.Markdown;
+            m_replyMessage.TextFormat = TextFormatTypes.Xml;
         }
 
 
