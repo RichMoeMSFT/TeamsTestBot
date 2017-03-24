@@ -670,7 +670,7 @@ namespace TestBotCSharp
                         "<img src='http://aka.ms/Fo983c' alt='Test image' />"
                 };
 
-                text = string.Join(string.Empty, tmp);
+                text = string.Join("<br />", tmp);
             }
 
             m_replyMessage.Text = text;
@@ -696,17 +696,18 @@ namespace TestBotCSharp
                     "*Italic*",
                     "~~Strike~~",
                     "`code()`",
+                    "> Block",
                     "---",
                     "emoji - " + EmojiToSurrogatePair(0x1f37a), //\uD83C\uDF20 ",
-                    "This is a Table:\n\n|Table Col 1|Col2|Column 3|\n|---|---|---|\n| R1C1 | Row 1 Column 2 | Row 1 Col 3 |\n|R2C1|R2C2|R2C3|\n",
-                    "* Unordered item 1<br />* Unordered item 2<br />* Unordered item 3",
-                    "1. Ordered item 1<br />2. Ordered item 2<br />3. Ordered item 3",
+                    "This is a Table:\n\n|Table Col 1|Col2|Column 3|\n|---|---|---|\n| R1C1 | Row 1 Column 2 | Row 1 Col 3 |\n|R2C1|R2C2|R2C3|\n\n",
+                    "* Unordered item 1\n* Unordered item 2\n* Unordered item 3\n",
+                    "1. Ordered item 1\n2. Ordered item 2\n3. Ordered item 3\n",
 
                     "[Link](https://bing.com)",
                     "![Alt Text](http://aka.ms/Fo983c)"
                 };
 
-                text = string.Join("<br />", tmp);
+                text = string.Join("\n\n", tmp);
             }
 
             m_replyMessage.Text = text;
