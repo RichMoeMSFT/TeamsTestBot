@@ -1,6 +1,8 @@
 var restify = require('restify');
 var builder = require('botbuilder');
 
+const S_STANDARD_IMGURL = "https://skypeteamsbotstorage.blob.core.windows.net/bottestartifacts/panoramic.png";
+
 //=========================================================
 // Bot Setup
 //=========================================================
@@ -19,16 +21,27 @@ var connector = new builder.ChatConnector({
 var bot = new builder.UniversalBot(connector);
 server.post('/api/messages', connector.listen());
 
+//Helper functions
+
 //=========================================================
 // Bots Dialogs
 //=========================================================
 
+var testFunc = function(){ 
+    var test = 1;
+
+}
+
+
 var intents = new builder.IntentDialog();
-bot.dialog('/', intents);
+
+
+bot.dialog('/', intents).onBegin(testFunc);
 
 var testCommands = [
     ['hero1', 'hero1Test', 'Hero1 help'],
-    ['help', 'help', 'Help help']
+    ['help', 'help', 'Help help'],
+    ['imgCard', 'imgCard', 'img card']
 ];
 
 
@@ -40,8 +53,8 @@ for (i = 0; i < testCommands.length;i++)
 }
 //intents.matches(/^hero1/i, 'hero1Test');
 
-
 intents.onDefault('help');
+
 
 // hero1
 bot.dialog('hero1Test', function (session) {
@@ -64,7 +77,30 @@ bot.dialog('hero1Test', function (session) {
 
 });
 
+
+// hero1
+bot.dialog('imgCard', function (session) {
+
+    var msg = new builder.Message(session);
+    msg.textFormat(builder.TextFormat.xml);
+    msg.attachmentLayout(builder.AttachmentLayout.list);
+    msg.attachments([
+        new builder.HeroCard(session)
+        .title("Card with image containing no width or height")
+        .subtitle("Subtitle ")
+        .text("<img src='" + S_STANDARD_IMGURL + "'/>")
+        .buttons([
+            builder.CardAction.imBack(session, "This is button 1", "Button1")
+        ])
+    ]);
+
+    session.send(msg).endDialog();
+
+});
+
+
 bot.dialog('help', function(session) {
     session.send("Help goes here").endDialog();
 
 });
+
