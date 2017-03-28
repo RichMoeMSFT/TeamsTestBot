@@ -1,0 +1,17 @@
+{
+  "name": "testbotnode",
+  "version": "1.0.0",
+  "description": "Teams Test Bot in Node.js",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Richard Moe",
+  "license": "ISC",
+  "dependencies": {
+    "bluebird": "^3.5.0",
+    "botbuilder": "^3.7.0",
+    "restify": "^4.3.0",
+    "swagger-client": "^3.0.3"
+  }
+}
