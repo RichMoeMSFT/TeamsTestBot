@@ -101,6 +101,22 @@ for (i = 0; i < testCommands.length;i++)
 intents.onDefault('help');
 
 
+// Send welcome when conversation with bot is started, by initiating the welcome dialog
+bot.on('conversationUpdate', function (message) {
+    if (message.membersAdded) {
+        message.membersAdded.forEach(function (identity) {
+            if (identity.id === message.address.bot.id) {
+                bot.beginDialog(message.address, 'welcome');
+            }
+        });
+    }
+});
+
+bot.dialog('welcome', function (session) {
+    session.send("Hello, I'm Teams TestBot, a handy tool to test Teams functionality.  This message was trigged by `conversationUpdate`").endDialog();
+
+});
+
 // hero1
 bot.dialog('hero1Test', function (session) {
 
@@ -247,10 +263,13 @@ bot.dialog('signin', function(session) {
 
     var msg = new builder.Message(session);
     //msg.attachmentLayout(builder.AttachmentLayout.list);
+    var sicard = new builder.SigninCard(session);
+    sicard.text("Sample Sign-in using SigninCard mod");
+    sicard.button("Sign-in", "https://microsoft.com");
+    sicard.data.content.buttons[0].type = "openUrl";
+    sicard.data.content.buttons[0].text = "blah";
     msg.attachments([
-        new builder.SigninCard(session)
-            .text("Sample Sign-in using SigninCard")
-            .button("Sign-in", "https://microsoft.com")
+        sicard
     ]);
 
     session.send(msg);
@@ -311,14 +330,5 @@ function printMembersInChannel(conversationAddress, members) {
 
 /*
 
-// Send welcome when conversation with bot is started, by initiating the root dialog
-bot.on('conversationUpdate', function (message) {
-    if (message.membersAdded) {
-        message.membersAdded.forEach(function (identity) {
-            if (identity.id === message.address.bot.id) {
-                bot.beginDialog(message.address, '/');
-            }
-        });
-    }
-});
+
 */
