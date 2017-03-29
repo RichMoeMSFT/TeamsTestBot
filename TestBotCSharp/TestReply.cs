@@ -636,8 +636,8 @@ namespace TestBotCSharp
                     {
                         new CardAction()
                         {
-                            Title = "Sign In (OpenURL)",
-                            Type = ActionTypes.OpenUrl,
+                            Title = "Sign In (signin type)",
+                            Type = "signin",
                             Value = openURL
                         }
                     }
