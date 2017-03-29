@@ -245,3 +245,6 @@ ModelManifest.xml
 [Ww]eb.[Dd]ebug.[Cc]onfig
 [Ww]eb.[Rr]elease.[Cc]onfig
 [Ww]eb.[Cc]onfig
+
+# Visual studio code config stuff
+.vscode/
