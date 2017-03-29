@@ -1,6 +1,10 @@
 var restify = require('restify');
 var builder = require('botbuilder');
 
+var Promise = require('bluebird');
+var url = require('url');
+var Swagger = require('swagger-client');
+
 const S_STANDARD_IMGURL = "https://skypeteamsbotstorage.blob.core.windows.net/bottestartifacts/panoramic.png";
 
 //=========================================================
@@ -21,31 +25,68 @@ var connector = new builder.ChatConnector({
 var bot = new builder.UniversalBot(connector);
 server.post('/api/messages', connector.listen());
 
+bot.use({
+    botbuilder: (session, next) => {
+            let message = session.message;
+            if (message) {
+                let botMri = message.address.bot.id.toLowerCase();
+                let botAtMention = message.entities && message.entities.find((entity) => (entity.type === "mention") && (entity.mentioned.id.toLowerCase() === botMri));
+                if (botAtMention) {
+                    // Save original text as property of the message
+                    message.textWithBotMentions = message.text;
+                    message.text = message.text.replace(botAtMention.text, "").trim();
+                }
+            }
+            next();
+        }
+});
+
+// Swagger client for Bot Connector API
+var connectorApiClient = new Swagger(
+    {
+        url: 'https://raw.githubusercontent.com/Microsoft/BotBuilder/master/CSharp/Library/Microsoft.Bot.Connector.Shared/Swagger/ConnectorAPI.json',  
+        usePromise: true
+    });
+
 //Helper functions
+function StripCommandFromMessage(msgString)
+{
+    var words = msgString.split(" ");
+
+    return msgString.replace(words[0] + " ", "");
+}
+
+// Inject the connector's JWT token into to the Swagger client
+function addTokenToClient(connector, clientPromise) {
+    // ask the connector for the token. If it expired, a new token will be requested to the API
+    var obtainToken = Promise.promisify(connector.getAccessToken.bind(connector));
+    return Promise.all([obtainToken(), clientPromise]).then((values) => {
+        var token = values[0];
+        var client = values[1];
+        client.clientAuthorizations.add('AuthorizationBearer', new Swagger.ApiKeyAuthorization('Authorization', 'Bearer ' + token, 'header'));
+        return client;
+    });
+}
+
 
 //=========================================================
 // Bots Dialogs
 //=========================================================
 
-var testFunc = function(){ 
-    var test = 1;
-
-}
-
 
 var intents = new builder.IntentDialog();
-
-
-bot.dialog('/', intents).onBegin(testFunc);
+bot.dialog('/', intents);
 
 var testCommands = [
     ['help', 'help', 'Show this message'],
     ['hero1', 'hero1Test', 'Hero card'],
     ['imgCard', 'imgCard', 'Hero card with img as content'],
+    ['signin', 'signin', 'Show a Signin Card, with button to launch URL'],
     ['formatmd', 'formatmd', 'Display a sample selection of markdown formats'],
     ['formatxml', 'formatxml', 'Display a sample selection of XML formats'],
     ['echo', 'echo', 'Echo your string'],
-    ['members', 'members', 'Show members of the team']
+    ['members', 'members', 'Show members of the team'],
+    ['mentions', 'mentions', 'Show the @mentions you pass']
 ];
 
 
@@ -82,7 +123,7 @@ bot.dialog('hero1Test', function (session) {
 });
 
 
-// hero1
+// imgCard
 bot.dialog('imgCard', function (session) {
 
     var msg = new builder.Message(session);
@@ -175,34 +216,45 @@ bot.dialog('echo', function(session) {
 
 bot.dialog('members', function(session) {
 
-    var convo = session.message;
-    var txt;
-    if (session.message.conversation.isGroup != true)
+    if (session.message.address.conversation.isGroup != true)
     {
-        txt = "GetConversationMembers only work in channel context at this time";
+        session.send("GetConversationMembers only work in channel context at this time");
+        session.endDialog();
     }
+    else
+    {
+        let conversationId = session.message.address.conversation.id;
     
-/*
-            //Check to validate this is in group context.
-            if (m_sourceMessage.Conversation.IsGroup != true)
-            {
-                m_replyMessage.Text = "GetConversationMembers only work in channel context at this time";
-                return;
-            }
+        // when a group conversation message is recieved,
+        // get the conversation members using the REST API and print it on the conversation.
 
-            ChannelAccount[] members = m_connector.Conversations.GetConversationMembers(m_sourceMessage.Conversation.Id);
-
-            m_replyMessage.Text = "These are the member userids returned by the GetConversationMembers() function";
-
-            for (int i = 0; i < members.Length; i++)
-            {
-                m_replyMessage.Text += "<br />" + members[i].Id + " : " + members[i].Name;
-            }
-        }
-*/    
-    session.send(txt);
+        // 1. inject the JWT from the connector to the client on every call
+        addTokenToClient(connector, connectorApiClient).then((client) => {
+            // 2. override API client host (api.botframework.com) with channel's serviceHost (e.g.: smba.trafficmanager.net)
+            var serviceUrl = url.parse(session.message.address.serviceUrl);
+            client.setHost(serviceUrl.host);
+            client.setBasePath(serviceUrl.path);
+            // 3. GET /v3/conversations/{conversationId}/members
+            client.Conversations.Conversations_GetConversationMembers({ conversationId: conversationId })
+                .then((res) => printMembersInChannel(session.message.address, res.obj))
+                .catch((error) => console.log('Error retrieving conversation members: ' + error.statusText));
+        });
+    }
     session.endDialog();
+});
 
+bot.dialog('signin', function(session) {
+
+    var msg = new builder.Message(session);
+    //msg.attachmentLayout(builder.AttachmentLayout.list);
+    msg.attachments([
+        new builder.SigninCard(session)
+            .text("Sample Sign-in using SigninCard")
+            .button("Sign-in", "https://microsoft.com")
+    ]);
+
+    session.send(msg);
+    session.endDialog();
 });
 
 bot.dialog('help', function(session) {
@@ -223,14 +275,42 @@ bot.dialog('help', function(session) {
 
 });
 
-function StripCommandFromMessage(msgString)
-{
-    var words = msgString.split(" ");
 
-    return msgString.replace(words[0] + " ", "");
+bot.dialog('mentions', function(session) {
+
+    let entities = session.message.entities;
+    let mentionCount = 0;
+    let txt = "";
+    for (i = 0;i < entities.length;i++)
+    {
+        if (entities[i].type === 'mention')
+        {
+            ++mentionCount;
+            txt += "\n---\n" + JSON.stringify(entities[i].mentioned,null, '\n');
+        }
+    }
+
+
+    session.send("You mentioned " + mentionCount + " entities:\n" + txt);
+    session.endDialog();
+
+});
+
+// Create a message with the member list and send it to the conversationAddress
+function printMembersInChannel(conversationAddress, members) {
+    if(!members || members.length == 0) return;
+    
+    var memberList = members.map((m) => '* ' + m.name + ' (Id: ' + m.id + ')')
+        .join('\n ');
+
+    var reply = new builder.Message()
+        .address(conversationAddress)
+        .text('These are the members of this conversation: \n ' + memberList);
+    bot.send(reply);
 }
 
 /*
+
 // Send welcome when conversation with bot is started, by initiating the root dialog
 bot.on('conversationUpdate', function (message) {
     if (message.membersAdded) {
