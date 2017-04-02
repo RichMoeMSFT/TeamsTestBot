@@ -6,20 +6,18 @@ using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Web;
+using Newtonsoft.Json.Linq;
 
 
 namespace TestBotCSharp
 {
 
 
-    public class TestReply
+    public class TestReply : TestBotReply
     {
         private static string S_STANDARD_IMGURL = "https://skypeteamsbotstorage.blob.core.windows.net/bottestartifacts/panoramic.png";
 
-        private Activity m_sourceMessage;
-        private Activity m_replyMessage;
-        private List<string> m_args;
-
+ 
         private string debugStr;
 
         private int m_dumpRequested = 0;
@@ -27,9 +25,9 @@ namespace TestBotCSharp
             static private int DUMPOUT = 2;
             static private char CHAR_DUMP = '|';
 
-        private ConnectorClient m_connector;
+
         
-        //Dictionary Vlue - this is a combo of the about string and the command to run.
+        //Dictionary - this is a combo of the about string and the command to run.
         public struct TestDetail
         {
             public string about;
@@ -45,9 +43,9 @@ namespace TestBotCSharp
 
         private readonly Dictionary<string, TestDetail> m_cmdToTestDetail;
 
-        public TestReply(ConnectorClient c)
+        public TestReply(ConnectorClient c) : base (c)
         {
-            m_connector = c;
+           
 
             m_cmdToTestDetail = new Dictionary<string, TestDetail>(StringComparer.InvariantCultureIgnoreCase);
             m_cmdToTestDetail.Add("help", new TestDetail("Show this message", HelpMessage));
@@ -76,7 +74,8 @@ namespace TestBotCSharp
 
             m_cmdToTestDetail.Add("members", new TestDetail("Show members of the team", MembersTest));
 
-            m_cmdToTestDetail.Add("create", new TestDetail("Create a new conversation", CreateConversationTest));
+            m_cmdToTestDetail.Add("create", new TestDetail("Create a new conversation", CreateConversation));
+            m_cmdToTestDetail.Add("create11", new TestDetail("!Create a new 1:1 conversation", Create11Conversation));
 
             m_cmdToTestDetail.Add("dumpin", new TestDetail("Display the incoming JSON", ActivityDumpIn));
             m_cmdToTestDetail.Add("dumpout", new TestDetail("Display the outgoing JSON", ActivityDumpOut));
@@ -171,7 +170,7 @@ namespace TestBotCSharp
         /// </summary>
         /// <param name="messageIn"></param>
         /// <returns></returns>
-        public Activity CreateMessage(Activity messageIn)
+        public override Activity CreateMessage(Activity messageIn)
         {
             m_sourceMessage = messageIn; //Store off so we don't pass around
             string messageText = StripBotNameFromText(messageIn.Text); //This will strip out the botname if the message came via channel and therefore it's mentioned
@@ -249,7 +248,7 @@ namespace TestBotCSharp
         /// <param name="messageIn">The message that the bot received</param>
         /// <param name="messageOut">The test message that the bot created</param>
         /// <returns></returns>
-        public Activity DumpMessage(Activity messageIn, Activity messageOut)
+        public override Activity DumpMessage(Activity messageIn, Activity messageOut)
         {
 
             if (m_dumpRequested == 0) return null;
@@ -278,7 +277,6 @@ namespace TestBotCSharp
             return temp;
 
         }
-
 
         /// <summary>
         /// Show a list of all available commands
@@ -753,17 +751,52 @@ namespace TestBotCSharp
 
         }
 
+        private void Create11Conversation()
+        {
+
+            m_conversationParams = new ConversationParameters(
+
+                /*
+                Bot = new ChannelAccount(ConfigurationManager.AppSettings["BotId"], "Leon's Test Bot"),
+                Members = new ChannelAccount[] { new ChannelAccount(userId) },
+                ChannelData = new ChannelData { Tenant = new Tenant { Id = tenantId } }
+                */
+                isGroup: false,
+                bot: new ChannelAccount(m_sourceMessage.Recipient.Id, "Rich's bot!"),
+                members: new ChannelAccount[] { new ChannelAccount(m_sourceMessage.From.Id) },
+                channelData: m_sourceMessage.ChannelData
+            );
+ 
+
+            /*
+            //Check to validate this is in group context.
+            if (m_sourceMessage.Conversation.IsGroup != true)
+            {
+                m_replyMessage.Text = "CreateConversation only work in channel context at this time";
+                return;
+            }
+            */
+
+            m_replyMessage.Text = "This is a new Conversation created with CreateConversationAsync().";
+            m_replyMessage.Text += "<br/><br/> ChannelID = " + m_sourceMessage.ChannelId;
+            m_replyMessage.Text += "<br/>ConversationID (in) = " + m_sourceMessage.Conversation.Id;
+
+
+            //Trigger a new conversation to be created in MessagesController:
+            m_replyMessage.Conversation = null;
+        }
+
 
         /// <summary>
         /// To test CreateConversationAsync set the Conversation to null, which triggers the creation of a new one in the MessageConroller post flow
         /// </summary>
-        private void CreateConversationTest()
+        private void CreateConversation()
         {
 
             //Check to validate this is in group context.
             if (m_sourceMessage.Conversation.IsGroup != true)
             {
-                m_replyMessage.Text = "CreateConversation only work in channel context at this time";
+                m_replyMessage.Text = "CreateConversation only works in channel context at this time";
                 return;
             }
 
@@ -771,6 +804,15 @@ namespace TestBotCSharp
             m_replyMessage.Text += "<br/><br/> ChannelID = " + m_sourceMessage.ChannelId;
             m_replyMessage.Text += "<br/>ConversationID (in) = " + m_sourceMessage.Conversation.Id;
 
+
+            m_conversationParams = new ConversationParameters(
+                isGroup: true,
+                bot: null,
+                members: null,
+                topicName: "New Conversation",
+                activity: (Activity)m_replyMessage,
+                channelData: m_sourceMessage.ChannelData
+            );
 
             //Trigger a new conversation to be created in MessagesController:
             m_replyMessage.Conversation = null;
@@ -836,9 +878,15 @@ namespace TestBotCSharp
                 }
 
             }
-
-            text = "Here is a mention:  Hello " + mentionedUser.Text;
-            m_replyMessage.Entities.Add((Entity) mentionedUser);
+            if (mentionedUser != null)
+            {
+                text = "Here is a mention:  Hello " + mentionedUser.Text;
+                m_replyMessage.Entities.Add((Entity)mentionedUser);
+            }
+            else
+            {
+                text = "No **users** mentioned";
+            }
 
             m_replyMessage.Text = text;
             m_replyMessage.TextFormat = TextFormatTypes.Markdown;

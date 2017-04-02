@@ -8,25 +8,18 @@ using Newtonsoft.Json.Linq;
 
 namespace TestBotCSharp
 {
-    public class SystemReply
+    public class SystemReply : TestBotReply
     {
 
-        private Activity sourceMessage;
-        private Activity replyMessage;
-
-
-        private ConnectorClient connector;
-
-        public SystemReply(ConnectorClient c)
+        public SystemReply(ConnectorClient c) : base (c)
         {
-            connector = c;
 
         }
 
-        public Activity CreateMessage(Activity messageIn)
+        public override Activity CreateMessage(Activity messageIn)
         {
-            sourceMessage = messageIn;
-            replyMessage = null;
+            m_sourceMessage = messageIn;
+            m_replyMessage = null;
             string messageString = null;
 
 
@@ -62,11 +55,11 @@ namespace TestBotCSharp
                 //Append full inboard payload:
                 messageString += "\r\n\r\n\r\n" + ActivityDumper.ActivityDump(messageIn);
 
-                replyMessage = messageIn.CreateReply();
-                replyMessage.Text = messageString;
+                m_replyMessage = messageIn.CreateReply();
+                m_replyMessage.Text = messageString;
             }
 
-            return replyMessage;
+            return m_replyMessage;
         }
 
         private string ConversationUpdate()
@@ -79,13 +72,13 @@ namespace TestBotCSharp
 
             //This should allow firing to "General" channel
             //Check to validate this is in group context.
-            if (sourceMessage.Conversation.IsGroup != true)
+            if (m_sourceMessage.Conversation.IsGroup != true)
             {
                 return null;
             }
 
             //Check the channelData eventType:
-            JObject channelData = (JObject)sourceMessage.ChannelData;
+            JObject channelData = (JObject)m_sourceMessage.ChannelData;
 
             string eventType = (string)channelData["eventType"];
 
@@ -136,10 +129,10 @@ namespace TestBotCSharp
 
             bool addedBot = false;
             //Create a string of the added members.  Or if one of the members added was the bot, show the welcome message instead.
-            for (int i = 0; i < sourceMessage.MembersAdded.Count; i++)
+            for (int i = 0; i < m_sourceMessage.MembersAdded.Count; i++)
             {
-                messageString += "\r\nMember" + sourceMessage.MembersAdded[i].Id;
-                if (sourceMessage.MembersAdded[i].Id == sourceMessage.Recipient.Id)
+                messageString += "\r\nMember" + m_sourceMessage.MembersAdded[i].Id;
+                if (m_sourceMessage.MembersAdded[i].Id == m_sourceMessage.Recipient.Id)
                 {
                     addedBot = true;
                     break;
@@ -165,10 +158,10 @@ namespace TestBotCSharp
 
             bool deletedBot = false;
             //Create a string of the deleted members.  Or if one of the members added was the bot, show the welcome message instead.
-            for (int i = 0; i < sourceMessage.MembersRemoved.Count; i++)
+            for (int i = 0; i < m_sourceMessage.MembersRemoved.Count; i++)
             {
-                messageString += "\r\nMember" + sourceMessage.MembersRemoved[i].Id;
-                if (sourceMessage.MembersRemoved[i].Id == sourceMessage.Recipient.Id)
+                messageString += "\r\nMember" + m_sourceMessage.MembersRemoved[i].Id;
+                if (m_sourceMessage.MembersRemoved[i].Id == m_sourceMessage.Recipient.Id)
                 {
                     deletedBot = true;
                     break;
@@ -194,7 +187,7 @@ namespace TestBotCSharp
 
 
             //Get the channelData eventType:
-            JObject channelData = (JObject)sourceMessage.ChannelData;
+            JObject channelData = (JObject)m_sourceMessage.ChannelData;
             JObject channelInfo = (JObject)channelData["channel"];
 
             messageString += "New channel id: " + (string)channelInfo["id"];

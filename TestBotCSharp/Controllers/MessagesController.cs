@@ -24,23 +24,53 @@ namespace TestBotCSharp
             Activity reply = null;
             Activity dumpReply = null;
 
+            TestBotReply testReply = null;
+
             if (activity.Type == ActivityTypes.Message)
             {
 
-                TestReply testreply = new TestBotCSharp.TestReply(connector);
-                reply = testreply.CreateMessage(activity);
-                dumpReply = testreply.DumpMessage(activity, reply);
+                testReply = new TestBotCSharp.TestReply(connector);
+                reply = testReply.CreateMessage(activity);
+                dumpReply = testReply.DumpMessage(activity, reply);
 
             }
             else
             {
-                SystemReply systemReply = new TestBotCSharp.SystemReply(connector);
-                reply = systemReply.CreateMessage(activity);
+                testReply = new TestBotCSharp.SystemReply(connector);
+                reply = testReply.CreateMessage(activity);
             }
 
             if (reply != null)
             {
                 if (reply.Conversation == null)
+                {
+                    ConversationParameters conversationParams = testReply.GetConversationParameters();
+                    /*
+                    ConversationParameters conversationParams = new ConversationParameters(
+                        isGroup: true,
+                        bot: null,
+                        members: null,
+                        topicName: "New Conversation",
+                        activity: (Activity)reply,
+                        channelData: activity.ChannelData
+                    );
+                    */
+                    /*
+                    ConversationParameters conversationParams = new ConversationParameters(
+                        isGroup: false,
+                        bot: null,
+                        members: new ChannelAccount[] { new ChannelAccount(reply.ReplyToId) },
+                        topicName: "New Conversation",
+                        activity: (Activity)reply,
+                        channelData: new ChannelData { Tenant = new Tenant {  IdentityToken = }
+                    );
+                    */
+
+                    await connector.Conversations.CreateConversationAsync(conversationParams);
+                    if (dumpReply != null)
+                        await connector.Conversations.ReplyToActivityAsync(dumpReply);
+                }
+                else if (reply.Conversation.Id == "1:1")
                 {
                     ConversationParameters conversationParams = new ConversationParameters(
                         isGroup: true,
@@ -50,6 +80,7 @@ namespace TestBotCSharp
                         activity: (Activity)reply,
                         channelData: activity.ChannelData
                     );
+       
 
                     await connector.Conversations.CreateConversationAsync(conversationParams);
                     if (dumpReply != null)
