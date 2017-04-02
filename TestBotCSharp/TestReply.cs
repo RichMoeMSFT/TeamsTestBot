@@ -547,33 +547,33 @@ namespace TestBotCSharp
                     null,
                     null,
                     new string[] { S_STANDARD_IMGURL },
-                    CreateImBackButtons(5) 
+                    CreateImBackButtons(5)
                 ),
                 GetHeroCardAttachment(
                     "Subject Title Carousel 2",
                     null,
                     null,
                     null,
-                    CreateImBackButtons(4) 
+                    CreateImBackButtons(4)
                  ),
                  GetHeroCardAttachment(
                     "Subject Title Carousel 3",
                     "Subtitle or breadcrumb",
-                    "Bacon ipsum dolor amet flank ground round chuck pork loin. Sirloin meatloaf boudin meatball ham hock shoulder capicola tri-tip sausage biltong cupim",
+                    LoremIpsum(12,2),
                     null,
                     CreateInvokeButtons(3)
                 ),
                 GetHeroCardAttachment(
                     "Subject Title Carousel 4",
                     "Subtitle or breadcrumb",
-                    "Bacon ipsum dolor amet flank ground round chuck pork loin. Sirloin meatloaf boudin meatball ham hock shoulder capicola tri-tip sausage biltong cupim",
+                    LoremIpsum(8,2,2),
                     new string[] { S_STANDARD_IMGURL },
                     CreateImBackButtons(2)
                 ),
                 GetHeroCardAttachment(
-                    "Subject Title Caraousel 5",
+                    "Subject Title Carousel 5",
                     null,
-                    "Bacon ipsum dolor amet flank ground round chuck pork loin. Sirloin meatloaf boudin meatball ham hock shoulder capicola tri-tip sausage biltong cupim",
+                    LoremIpsum(7,5),
                     null,
                     CreateImBackButtons(1)
                 )                
@@ -592,7 +592,7 @@ namespace TestBotCSharp
 
             var card = GetHeroCardAttachment(
                 "Subject Title Carouselx",
-                "Note: Teams currently supposrts a max of 5 cards",
+                "Note: Teams currently supports a max of 5 cards",
                 "Bacon ipsum dolor amet flank ground round chuck pork loin. Sirloin meatloaf boudin meatball ham hock shoulder capicola tri-tip sausage biltong cupim",
                 new string[] { S_STANDARD_IMGURL },
                 CreateImBackButtons(7)  // Teams only support 6 actions max. Send more.
@@ -785,6 +785,8 @@ namespace TestBotCSharp
         private void Create11Conversation()
         {
 
+            var cd = m_sourceMessage.ChannelData;
+
             m_conversationParams = new ConversationParameters(
 
                 /*
@@ -793,7 +795,7 @@ namespace TestBotCSharp
                 ChannelData = new ChannelData { Tenant = new Tenant { Id = tenantId } }
                 */
                 isGroup: false,
-                bot: new ChannelAccount(m_sourceMessage.Recipient.Id, "Rich's bot!"),
+                bot: new ChannelAccount(m_sourceMessage.Recipient.Id, m_sourceMessage.Recipient.Name),
                 members: new ChannelAccount[] { new ChannelAccount(m_sourceMessage.From.Id) },
                 channelData: m_sourceMessage.ChannelData
             );
@@ -1037,15 +1039,15 @@ namespace TestBotCSharp
         }
 
         /// <summary>
-        /// 
+        /// Generates random paragraphs.  Numbers are multiplicative (e.g. word per sentence, sentences per line.)
         /// </summary>
         /// <param name="numWords"></param>
         /// <param name="numSentences"></param>
         /// <param name="numLines"></param>
         /// <returns></returns>
-        private static string LoremIpsum(int numWords, int numSentences, int numLines)
+        private static string LoremIpsum(int numWords, int numSentences = 1, int numLines = 1)
         {
-            var words = new[] { "lorem", "ipsum", "dolor", "sit", "amet", "consectetuer", "adipiscing", "elit", "sed", "diam", "nonummy", "nibh", "euismod", "tincidunt", "ut", "laoreet", "dolore", "magna", "aliquam", "erat" };
+            var words = new[] { "lorem", "ipsum", "dolor", "sit", "amet", "capicola", "meatball", "elit", "ham", "pork", "nonummy", "cube", "tri-tip", "pepperoni", "ut", "sausage", "chuck", "bacon", "meatloaf", "flank" };
 
             var rand = new Random();
             bool capitalize = true;
