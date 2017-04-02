@@ -26,7 +26,7 @@ namespace TestBotCSharp
 
             TestBotReply testReply = null;
 
-            if (activity.Type == ActivityTypes.Message)
+            if (activity.Type == ActivityTypes.Message || activity.Type == ActivityTypes.Invoke)
             {
 
                 testReply = new TestBotCSharp.TestReply(connector);

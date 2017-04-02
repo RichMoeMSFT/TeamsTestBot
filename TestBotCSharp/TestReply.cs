@@ -18,13 +18,10 @@ namespace TestBotCSharp
         private static string S_STANDARD_IMGURL = "https://skypeteamsbotstorage.blob.core.windows.net/bottestartifacts/panoramic.png";
 
  
-        private string debugStr;
-
         private int m_dumpRequested = 0;
             static private int DUMPIN = 1;
             static private int DUMPOUT = 2;
             static private char CHAR_DUMP = '|';
-
 
         
         //Dictionary - this is a combo of the about string and the command to run.
@@ -76,6 +73,8 @@ namespace TestBotCSharp
 
             m_cmdToTestDetail.Add("create", new TestDetail("Create a new conversation", CreateConversation));
             m_cmdToTestDetail.Add("create11", new TestDetail("!Create a new 1:1 conversation", Create11Conversation));
+
+            m_cmdToTestDetail.Add("imback", new TestDetail("!This is just a handler for the imback buttons", ImBackResponse));
 
             m_cmdToTestDetail.Add("dumpin", new TestDetail("Display the incoming JSON", ActivityDumpIn));
             m_cmdToTestDetail.Add("dumpout", new TestDetail("Display the outgoing JSON", ActivityDumpOut));
@@ -130,7 +129,7 @@ namespace TestBotCSharp
                 }
             }
 
-
+  
             return messageText;
         }
 
@@ -173,70 +172,71 @@ namespace TestBotCSharp
         public override Activity CreateMessage(Activity messageIn)
         {
             m_sourceMessage = messageIn; //Store off so we don't pass around
-            string messageText = StripBotNameFromText(messageIn.Text); //This will strip out the botname if the message came via channel and therefore it's mentioned
 
-            //Split into arguments.  If in quotes, treat entire string as a single arg.
-            m_args = messageText.Split('"')
-                                 .Select((element, index) => index % 2 == 0  // If even index
-                                                       ? element.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)  // Split the item
-                                                       : new string[] { element })  // Keep the entire item
-                                 .SelectMany(element => element).ToList();
 
-            //one more pass to remove empties and whitespace
-            m_args = m_args.Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
-            for (int i = 0;i < m_args.Count;i++)
-            {
-                m_args[i] = m_args[i].Trim();
-            }
 
-#if false
-            debugStr = "";
-            for (int i = 0; i < args[0].Length; i++)
-            {
-                debugStr += "<br> [" + args[0][i] + "]";
-            }
-
-#endif
             //Create the message as a simple Reply
             m_replyMessage = messageIn.CreateReply();
 
-
-            if (m_args.Count > 0)
+            if (messageIn.Type == ActivityTypes.Invoke)
             {
-                string testcommand = m_args[0];
-                m_dumpRequested = 0;
-
-                //Scan for dump tag - DumpIn = prepend, DumpOut = postpend
-                if (testcommand[0] == CHAR_DUMP)
-                {
-                    testcommand = testcommand.Substring(1);
-                    m_dumpRequested += DUMPIN;
-                }
-
-                if (testcommand[testcommand.Length-1] == CHAR_DUMP)
-                {
-                    testcommand = testcommand.Remove(testcommand.Length - 1);
-                    m_dumpRequested += DUMPOUT;
-                }
-                
-
-                //Dispatch the command - check dictionary for command and run the appropriate function.
-                if (m_cmdToTestDetail.ContainsKey(testcommand))
-                {
-                    m_cmdToTestDetail[testcommand].buildMessage();
-                }
-                else
-                {
-                    m_dumpRequested = DUMPIN;
-                    HelpMessage();
-                }
-
+                InvokeResponse();  
             }
             else
             {
-                HelpMessage();
-            }
 
+                string messageText = StripBotNameFromText(messageIn.Text); //This will strip out the botname if the message came via channel and therefore it's mentioned
+
+                //Split into arguments.  If in quotes, treat entire string as a single arg.
+                m_args = messageText.Split('"')
+                                     .Select((element, index) => index % 2 == 0  // If even index
+                                                           ? element.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)  // Split the item
+                                                           : new string[] { element })  // Keep the entire item
+                                     .SelectMany(element => element).ToList();
+
+                //one more pass to remove empties and whitespace
+                m_args = m_args.Where(s => !string.IsNullOrWhiteSpace(s)).ToList();
+                for (int i = 0; i < m_args.Count; i++)
+                {
+                    m_args[i] = m_args[i].Trim();
+                }
+
+                if (m_args.Count > 0)
+                {
+                    string testcommand = m_args[0];
+                    m_dumpRequested = 0;
+
+                    //Scan for dump tag - DumpIn = prepend, DumpOut = postpend
+                    if (testcommand[0] == CHAR_DUMP)
+                    {
+                        testcommand = testcommand.Substring(1);
+                        m_dumpRequested += DUMPIN;
+                    }
+
+                    if (testcommand[testcommand.Length - 1] == CHAR_DUMP)
+                    {
+                        testcommand = testcommand.Remove(testcommand.Length - 1);
+                        m_dumpRequested += DUMPOUT;
+                    }
+
+
+                    //Dispatch the command - check dictionary for command and run the appropriate function.
+                    if (m_cmdToTestDetail.ContainsKey(testcommand))
+                    {
+                        m_cmdToTestDetail[testcommand].buildMessage();
+                    }
+                    else
+                    {
+                        m_dumpRequested = DUMPIN;
+                        HelpMessage();
+                    }
+
+                }
+                else
+                {
+                    HelpMessage();
+                }
+            }
 
             return m_replyMessage;
         }
@@ -293,11 +293,6 @@ namespace TestBotCSharp
             }
 
 #endif
-            if (debugStr != null)
-            {
-                outText += "Debug: [" + debugStr + "]<br /><br />";
-            }
-
 
             outText += "<br />** A list of all valid tests.** <br /> <br />  Values in [] can be changed by adding appropriate arguments, e.g. 'hero1 5' makes a hero1 card with 5 buttons; 'hero3 \"This is a Title\"' uses that string as the title.<br /> <br />You can prepend or postpend '|' (pipe) to dump the payload for incoming or outgoing message, respectively. <br /> <br /> ---";
 
@@ -645,7 +640,43 @@ namespace TestBotCSharp
 
         }
 
- 
+        /// <summary>
+        /// Respond to Invoke button click
+        /// </summary>
+        private void InvokeResponse()
+        {
+
+            var text = "### Received Invoke action from button. ###\n\n";
+            text += "Payload is: \n\n";
+
+            //Get payload here:
+            JObject payload = (JObject) m_sourceMessage.Value;
+            text += payload.ToString();
+
+
+            m_replyMessage.Text = text;
+            m_dumpRequested = DUMPIN;
+
+        }
+
+        /// <summary>
+        /// Respond to ImBack button click
+        /// </summary>
+        private void ImBackResponse()
+        {
+
+            var text = "### Received ImBack action from button. ###\n\n";
+            text += "Message is: \n\n";
+
+            //Get payload here:
+            text += m_sourceMessage.Text;
+
+
+            m_replyMessage.Text = text;
+            m_dumpRequested = DUMPIN;
+
+        }
+
         /// <summary>
         /// Test XML formatting
         /// </summary>
@@ -930,29 +961,7 @@ namespace TestBotCSharp
             if (buttons != null)
             {
                 heroCard.Buttons = buttons;
-                /*
-                foreach (var btn in buttons)
-                {
-                    if (useInvoke)
-                    {
-                        heroCard.Buttons.Add(new CardAction()
-                        {
-                            Title = btn,
-                            Type = "invoke",
-                            Value = "{\"invokeValue:\": \"" + btn + "\"}"
-                        });
-                    }
-                    else
-                    {
-                        heroCard.Buttons.Add(new CardAction()
-                        {
-                            Title = btn,
-                            Type = ActionTypes.ImBack,
-                            Value = btn,
-                        });
-                    }
-                }
-                */
+
             }
 
             return new Attachment()
