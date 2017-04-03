@@ -16,8 +16,10 @@ namespace TestBotCSharp
     public class TestReply : TestBotReply
     {
         private static string S_STANDARD_IMGURL = "https://skypeteamsbotstorage.blob.core.windows.net/bottestartifacts/panoramic.png";
+        private static string S_THUMB_IMGURL = "https://skypeteamsbotstorage.blob.core.windows.net/bottestartifacts/sandwich_thumbnail.png";
 
- 
+
+
         private int m_dumpRequested = 0;
             static private int DUMPIN = 1;
             static private int DUMPOUT = 2;
@@ -53,17 +55,29 @@ namespace TestBotCSharp
             m_cmdToTestDetail.Add("hero3", new TestDetail("!Hero Card with no content and [\"Optional Title\"]", Hero3Message));
             m_cmdToTestDetail.Add("hero4", new TestDetail("!Hero Card with no content and [\"Optional Title\"]", Hero4Message));
             m_cmdToTestDetail.Add("imgCard", new TestDetail("Hero Card with [\"img\"] as Content", ImgCardMessage));
-            m_cmdToTestDetail.Add("heroRYO", new TestDetail("Roll your own: [\"Title\"] [\"SubTitle\"] [\"Content\"] [\"ImageURL\"] [Buttons] ", HeroRYOMessage));
+            m_cmdToTestDetail.Add("heroRYO", new TestDetail("Roll your own: [\"Title\"] [\"SubTitle\"] [\"Content\"] [\"ImageURL\"] [ImBack Button count] ", HeroRYOMessage));
 
             m_cmdToTestDetail.Add("heroInvoke", new TestDetail("Hero Card with [2] buttons using invoke action type", HeroInvokeMessage));
 
             m_cmdToTestDetail.Add("carousel1", new TestDetail("Show a Carousel with different cards in each", Carousel1Message));
             m_cmdToTestDetail.Add("carouselx", new TestDetail("Show a Carousel with [5] identical cards", CarouselxMessage));
 
+            m_cmdToTestDetail.Add("list1", new TestDetail("Show a List with different cards in each", List1Message));
+            m_cmdToTestDetail.Add("listx", new TestDetail("Show a List with [5] identical cards", ListxMessage));
+
+            m_cmdToTestDetail.Add("thumb", new TestDetail("Display a Thumbnail Card", ThumbnailMessage));
+            m_cmdToTestDetail.Add("thumblist", new TestDetail("Show a List with [5] identical thumbnails", ThumbnailListMessage));
+            m_cmdToTestDetail.Add("thumbRYO", new TestDetail("Roll your own: [\"Title\"] [\"SubTitle\"] [\"Content\"] [\"ImageURL\"] [ImBack Button count] ", HeroRYOMessage));
+
+
+            m_cmdToTestDetail.Add("animcard", new TestDetail("!Display an Animation Card - not supported", AnimationCardMessage));
+            m_cmdToTestDetail.Add("videocard", new TestDetail("!Display a Video Card - not supported", VideoCardMessage));
+            m_cmdToTestDetail.Add("audiocard", new TestDetail("!Display an Audio Card - not supported", AudioCardMessage));
+
+
             m_cmdToTestDetail.Add("signin", new TestDetail("Show a Signin Card, with button to launch [URL]",SignInMessage));
             m_cmdToTestDetail.Add("formatxml", new TestDetail("Display a [\"sample\"] selection of XML formats", FormatXMLMessage));
             m_cmdToTestDetail.Add("formatmd", new TestDetail("Display a [\"sample\"] selection of Markdown formats", FormatMDMessage));
-            m_cmdToTestDetail.Add("thumb", new TestDetail("Display a Thumbnail Card", ThumbnailMessage));
 
             m_cmdToTestDetail.Add("echo", new TestDetail("Echo your [\"string\"]", EchoMessage));
             m_cmdToTestDetail.Add("mentions", new TestDetail("Show the @mentions you pass", MentionsTest));
@@ -511,6 +525,30 @@ namespace TestBotCSharp
         }
 
         /// <summary>
+        /// 
+        /// </summary>
+        private void ThumbRYOMessage()
+        {
+            string title = GetArg(1);
+            string subTitle = GetArg(2);
+            string content = GetArg(3);
+            string imgURL = GetArg(4);
+            int buttonCount = GetArgInt(5);
+
+            m_replyMessage.Attachments = new List<Attachment>()
+            {
+                GetThumbnailCardAttachment(
+                    title,
+                    subTitle,
+                    content,
+                    (imgURL == null ? null : new string[] { imgURL }),
+                    CreateImBackButtons(buttonCount)
+                )
+            };
+
+        }
+
+        /// <summary>
         /// This will display an Img in the Content section of the Attachment, instead of the Image section.
         /// </summary>
         private void ImgCardMessage()
@@ -533,6 +571,121 @@ namespace TestBotCSharp
 
         }
 
+
+        private void AnimationCardMessage()
+        {
+            //Not supported in Teams as of 4/2/2017
+            m_replyMessage.Text = "Not currently supported in Teams";
+
+            var animCard = new AnimationCard
+            {
+                Title = "Animation test",
+                Subtitle = "Subtitle",
+                Image = new ThumbnailUrl("https://docs.botframework.com/en-us/images/faq-overview/botframework_overview_july.png"),
+                Media = new List<MediaUrl>
+                {
+                    new MediaUrl()
+                    {
+                        Url = "http://i.giphy.com/Ki55RUbOV5njy.gif"
+                    }
+                }
+            };
+
+            var attachments = new List<Attachment>();
+
+
+            attachments.Add( new Attachment()
+                {
+                    ContentType = AnimationCard.ContentType,
+                    Content = animCard
+                }
+            );
+
+
+            m_replyMessage.Attachments = attachments;
+
+
+        }
+
+        private void VideoCardMessage()
+        {
+            //Not supported in Teams as of 4/2/2017
+            m_replyMessage.Text = "Not currently supported in Teams";
+
+            var videoCard = new VideoCard
+            {
+                Title = "Big Buck Bunny",
+                Subtitle = "by the Blender Institute",
+                Text = "Big Buck Bunny (code-named Peach) is a short computer-animated comedy film by the Blender Institute, part of the Blender Foundation. Like the foundation's previous film Elephants Dream, the film was made using Blender, a free software application for animation made by the same foundation. It was released as an open-source film under Creative Commons License Attribution 3.0.",
+                Image = new ThumbnailUrl
+                {
+                    Url = "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Big_buck_bunny_poster_big.jpg/220px-Big_buck_bunny_poster_big.jpg"
+                },
+                Media = new List<MediaUrl>
+                {
+                    new MediaUrl()
+                    {
+                        Url = "http://download.blender.org/peach/bigbuckbunny_movies/BigBuckBunny_320x180.mp4"
+                    }
+                },
+                Buttons = new List<CardAction>
+                {
+                    new CardAction()
+                    {
+                        Title = "Learn More",
+                        Type = ActionTypes.OpenUrl,
+                        Value = "https://peach.blender.org/"
+                    }
+                }
+            };
+
+            var attachments = new List<Attachment>();
+
+            attachments.Add(videoCard.ToAttachment());
+
+
+            m_replyMessage.Attachments = attachments;
+
+        }
+
+        private void AudioCardMessage()
+        {
+            //Not supported in Teams as of 4/2/2017
+            m_replyMessage.Text = "Not currently supported in Teams";
+
+            var audioCard = new AudioCard
+            {
+                Title = "I am your father",
+                Subtitle = "Star Wars: Episode V - The Empire Strikes Back",
+                Text = "The Empire Strikes Back (also known as Star Wars: Episode V – The Empire Strikes Back) is a 1980 American epic space opera film directed by Irvin Kershner. Leigh Brackett and Lawrence Kasdan wrote the screenplay, with George Lucas writing the film's story and serving as executive producer. The second installment in the original Star Wars trilogy, it was produced by Gary Kurtz for Lucasfilm Ltd. and stars Mark Hamill, Harrison Ford, Carrie Fisher, Billy Dee Williams, Anthony Daniels, David Prowse, Kenny Baker, Peter Mayhew and Frank Oz.",
+                Image = new ThumbnailUrl
+                {
+                    Url = "https://upload.wikimedia.org/wikipedia/en/3/3c/SW_-_Empire_Strikes_Back.jpg"
+                },
+                Media = new List<MediaUrl>
+                {
+                    new MediaUrl()
+                    {
+                        Url = "http://www.wavlist.com/movies/004/father.wav"
+                    }
+                },
+                Buttons = new List<CardAction>
+                {
+                    new CardAction()
+                    {
+                        Title = "Read More",
+                        Type = ActionTypes.OpenUrl,
+                        Value = "https://en.wikipedia.org/wiki/The_Empire_Strikes_Back"
+                    }
+                }
+            };
+
+
+            var attachments = new List<Attachment>();
+            attachments.Add(audioCard.ToAttachment());
+            m_replyMessage.Attachments = attachments;
+
+        }
 
         /// <summary>
         /// Carousel with 5 different cards
@@ -607,6 +760,80 @@ namespace TestBotCSharp
 
             m_replyMessage.Attachments = attachments;
             m_replyMessage.AttachmentLayout = AttachmentLayoutTypes.Carousel;
+
+        }
+
+        /// <summary>
+        /// List with 5 different cards
+        /// </summary>
+        private void List1Message()
+        {
+
+            m_replyMessage.Attachments = new List<Attachment>()
+            {
+                GetHeroCardAttachment(
+                    null,
+                    null,
+                    null,
+                    new string[] { S_STANDARD_IMGURL },
+                    CreateImBackButtons(5)
+                ),
+                GetHeroCardAttachment(
+                    "Subject Title List 2",
+                    null,
+                    null,
+                    null,
+                    CreateImBackButtons(4)
+                 ),
+                 GetHeroCardAttachment(
+                    "Subject Title List 3",
+                    "Subtitle or breadcrumb",
+                    LoremIpsum(12,2),
+                    null,
+                    CreateInvokeButtons(3)
+                ),
+                GetHeroCardAttachment(
+                    "Subject Title List 4",
+                    "Subtitle or breadcrumb",
+                    LoremIpsum(8,2,2),
+                    new string[] { S_STANDARD_IMGURL },
+                    CreateImBackButtons(2)
+                ),
+                GetHeroCardAttachment(
+                    "Subject Title List 5",
+                    null,
+                    LoremIpsum(7,5),
+                    null,
+                    CreateImBackButtons(1)
+                )
+           };
+            m_replyMessage.AttachmentLayout = AttachmentLayoutTypes.List;
+
+        }
+
+
+        private void ListxMessage()
+        {
+            int numberOfCards = GetArgInt(1);
+            if (numberOfCards == -1) numberOfCards = 5;
+
+            var card = GetHeroCardAttachment(
+                "Subject Title Carouselx",
+                "Note: Teams currently supports a max of 5 cards",
+                "Bacon ipsum dolor amet flank ground round chuck pork loin. Sirloin meatloaf boudin meatball ham hock shoulder capicola tri-tip sausage biltong cupim",
+                new string[] { S_STANDARD_IMGURL },
+                CreateImBackButtons(7)  // Teams only support 6 actions max. Send more.
+             );
+
+            var attachments = new List<Attachment>();
+
+            for (var i = 0; i < numberOfCards; i++) // Teams only supports 5 attachments, sending more than that causes a Chat Service issue.
+            {
+                attachments.Add(card);
+            }
+
+            m_replyMessage.Attachments = attachments;
+            m_replyMessage.AttachmentLayout = AttachmentLayoutTypes.List;
 
         }
 
@@ -773,14 +1000,44 @@ namespace TestBotCSharp
             var card = GetThumbnailCardAttachment(
                 "Homegrown Thumbnail Card",
                 "Sandwiches and salads",
-                "104 Lake St, Kirkland, WA 98033<br />(425) 123-4567",
-                new string[] { "https://skypeteamsbotstorage.blob.core.windows.net/bottestartifacts/sandwich_thumbnail.png" },
-                new string[] { "View in article", "See more like this" });
+                "104 Lake St, Kirkland, WA 98033/n/n(425) 123-4567",
+                new string[] { S_THUMB_IMGURL },
+                CreateImBackButtons(2)
+            );
 
             m_replyMessage.Attachments = new List<Attachment> { card };
 
 
         }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        private void ThumbnailListMessage()
+        {
+            int numberOfCards = GetArgInt(1);
+            if (numberOfCards == -1) numberOfCards = 5;
+
+            var card = GetThumbnailCardAttachment(
+                "Homegrown Thumbnail Card",
+                "Sandwiches and salads",
+                "104 Lake St, Kirkland, WA 98033/n/n(425) 123-4567",
+                new string[] { S_THUMB_IMGURL },
+                CreateImBackButtons(3)
+            );
+            
+            var attachments = new List<Attachment>();
+
+            for (var i = 0; i < numberOfCards; i++) // Teams only supports 5 attachments, sending more than that causes a Chat Service issue.
+            {
+                attachments.Add(card);
+            }
+
+            m_replyMessage.Attachments = attachments;
+            m_replyMessage.AttachmentLayout = AttachmentLayoutTypes.List;
+
+        }
+
 
         private void Create11Conversation()
         {
@@ -935,7 +1192,7 @@ namespace TestBotCSharp
         /// <param name="images">Images in the card</param>
         /// <param name="buttons">Buttons in the card</param>
         /// <returns>Card attachment</returns>
-        private static Attachment GetHeroCardAttachment(string title, string subTitle, string text, string[] images, CardAction[] buttons, bool useInvoke = false)
+        private static Attachment GetHeroCardAttachment(string title, string subTitle, string text, string[] images, CardAction[] buttons)
         {
             var heroCard = new HeroCard()
             {
@@ -963,7 +1220,6 @@ namespace TestBotCSharp
             if (buttons != null)
             {
                 heroCard.Buttons = buttons;
-
             }
 
             return new Attachment()
@@ -983,7 +1239,7 @@ namespace TestBotCSharp
         /// <param name="images">Images in the card</param>
         /// <param name="buttons">Buttons in the card</param>
         /// <returns>Card attachment</returns>
-        private static Attachment GetThumbnailCardAttachment(string title, string subTitle, string text, string[] images, string[] buttons)
+        private static Attachment GetThumbnailCardAttachment(string title, string subTitle, string text, string[] images, CardAction[] buttons)
         {
             var heroCard = new ThumbnailCard()
             {
@@ -1020,15 +1276,7 @@ namespace TestBotCSharp
             // Set buttons
             if (buttons != null)
             {
-                foreach (var btn in buttons)
-                {
-                    heroCard.Buttons.Add(new CardAction()
-                    {
-                        Title = btn,
-                        Type = ActionTypes.ImBack,
-                        Value = btn,
-                    });
-                }
+                heroCard.Buttons = buttons;
             }
 
             return new Attachment()
