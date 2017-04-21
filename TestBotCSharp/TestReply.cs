@@ -12,6 +12,20 @@ using Newtonsoft.Json.Linq;
 namespace TestBotCSharp
 {
 
+    public class ChannelData
+    {
+        public string TeamsChannelId { get; set; }
+        public string TeamsTeamId { get; set; }
+        public Tenant Tenant { get; set; }
+    }
+
+    public class Tenant
+    {
+        public string Id { get; set; }
+    }
+
+
+
 
     public class TestReply : TestBotReply
     {
@@ -1042,38 +1056,26 @@ namespace TestBotCSharp
         private void Create11Conversation()
         {
 
-            var cd = m_sourceMessage.ChannelData;
+            JObject cd = (JObject)m_sourceMessage.ChannelData;
+            string tenantID = (string) cd["tenant"]["id"];
 
-            m_conversationParams = new ConversationParameters(
 
-                /*
-                Bot = new ChannelAccount(ConfigurationManager.AppSettings["BotId"], "Leon's Test Bot"),
-                Members = new ChannelAccount[] { new ChannelAccount(userId) },
-                ChannelData = new ChannelData { Tenant = new Tenant { Id = tenantId } }
-                */
-                isGroup: false,
-                bot: new ChannelAccount(m_sourceMessage.Recipient.Id, m_sourceMessage.Recipient.Name),
-                members: new ChannelAccount[] { new ChannelAccount(m_sourceMessage.From.Id) },
-                channelData: m_sourceMessage.ChannelData
-            );
  
+            m_replyMessage.Text = "This is a new 1:1 Conversation.";
 
-            /*
-            //Check to validate this is in group context.
-            if (m_sourceMessage.Conversation.IsGroup != true)
+            //Trigger a new 1:1conversation to be created in MessagesController:
+            m_replyMessage.Conversation.Id = "1:1";
+
+
+            m_conversationParams = new ConversationParameters
             {
-                m_replyMessage.Text = "CreateConversation only work in channel context at this time";
-                return;
-            }
-            */
 
-            m_replyMessage.Text = "This is a new Conversation created with CreateConversationAsync().";
-            m_replyMessage.Text += "<br/><br/> ChannelID = " + m_sourceMessage.ChannelId;
-            m_replyMessage.Text += "<br/>ConversationID (in) = " + m_sourceMessage.Conversation.Id;
+                Bot = new ChannelAccount(m_sourceMessage.Recipient.Id, m_sourceMessage.Recipient.Name),
+                Members = new ChannelAccount[] { new ChannelAccount(m_sourceMessage.From.Id) },
+                ChannelData = new ChannelData { Tenant = new Tenant { Id = tenantID } },
+                Activity = (Activity)m_replyMessage
+            };
 
-
-            //Trigger a new conversation to be created in MessagesController:
-            m_replyMessage.Conversation = null;
         }
 
 

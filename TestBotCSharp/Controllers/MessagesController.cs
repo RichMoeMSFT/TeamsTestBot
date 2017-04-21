@@ -45,26 +45,6 @@ namespace TestBotCSharp
                 if (reply.Conversation == null)
                 {
                     ConversationParameters conversationParams = testReply.GetConversationParameters();
-                    /*
-                    ConversationParameters conversationParams = new ConversationParameters(
-                        isGroup: true,
-                        bot: null,
-                        members: null,
-                        topicName: "New Conversation",
-                        activity: (Activity)reply,
-                        channelData: activity.ChannelData
-                    );
-                    */
-                    /*
-                    ConversationParameters conversationParams = new ConversationParameters(
-                        isGroup: false,
-                        bot: null,
-                        members: new ChannelAccount[] { new ChannelAccount(reply.ReplyToId) },
-                        topicName: "New Conversation",
-                        activity: (Activity)reply,
-                        channelData: new ChannelData { Tenant = new Tenant {  IdentityToken = }
-                    );
-                    */
 
                     await connector.Conversations.CreateConversationAsync(conversationParams);
                     if (dumpReply != null)
@@ -72,17 +52,15 @@ namespace TestBotCSharp
                 }
                 else if (reply.Conversation.Id == "1:1")
                 {
-                    ConversationParameters conversationParams = new ConversationParameters(
-                        isGroup: true,
-                        bot: null,
-                        members: null,
-                        topicName: "New Conversation",
-                        activity: (Activity)reply,
-                        channelData: activity.ChannelData
-                    );
-       
+                    ConversationParameters conversationParams = testReply.GetConversationParameters();
 
-                    await connector.Conversations.CreateConversationAsync(conversationParams);
+                    var conversationId = await connector.Conversations.CreateConversationAsync(conversationParams);
+                    if (conversationId != null)
+                    {
+                        reply.Text += "\n\n\nConversationID returned by CreateConversationAsync: " + conversationId.Id;
+                        reply.Conversation = new ConversationAccount(id: conversationId.Id);
+                        await connector.Conversations.SendToConversationAsync(reply);
+                    }
                     if (dumpReply != null)
                         await connector.Conversations.ReplyToActivityAsync(dumpReply);
                 }
