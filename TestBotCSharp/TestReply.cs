@@ -100,7 +100,7 @@ namespace TestBotCSharp
             m_cmdToTestDetail.Add("members", new TestDetail("Show members of the team", MembersTest));
 
             m_cmdToTestDetail.Add("create", new TestDetail("Create a new conversation", CreateConversation));
-            m_cmdToTestDetail.Add("create11", new TestDetail("!Create a new 1:1 conversation", Create11Conversation));
+            m_cmdToTestDetail.Add("create11", new TestDetail("Create a new 1:1 conversation", Create11Conversation));
 
             m_cmdToTestDetail.Add("imback", new TestDetail("!This is just a handler for the imback buttons", ImBackResponse));
 
@@ -1053,34 +1053,40 @@ namespace TestBotCSharp
         }
 
 
+        /// <summary>
+        /// This sets a flag for the main message loop to use the create1-1 flow using the ConversationParameters set below. 
+        /// 
+        /// This routine is leveraging the fact that my inbound message has the user and bot identities, as well as the tenantID I need to create the
+        /// appropriate ConverstationParameters.
+        /// 
+        /// Note that creating a new conversation is a multi-step process:  
+        ///     1) CreateConversationAsync with the appropriate conversation parameters will return the conversationID for the user
+        ///     2) SendMessage to the conversationID to send the actual text.
+        /// </summary>
         private void Create11Conversation()
         {
 
+            //Retrieve the tenantID from the incoming message.
             JObject cd = (JObject)m_sourceMessage.ChannelData;
             string tenantID = (string) cd["tenant"]["id"];
-
-
- 
-            m_replyMessage.Text = "This is a new 1:1 Conversation.";
 
             //Trigger a new 1:1conversation to be created in MessagesController:
             m_replyMessage.Conversation.Id = "1:1";
 
-
+            //Create the conversation params, leveraging information from the incoming payload
             m_conversationParams = new ConversationParameters
             {
 
                 Bot = new ChannelAccount(m_sourceMessage.Recipient.Id, m_sourceMessage.Recipient.Name),
                 Members = new ChannelAccount[] { new ChannelAccount(m_sourceMessage.From.Id) },
-                ChannelData = new ChannelData { Tenant = new Tenant { Id = tenantID } },
-                Activity = (Activity)m_replyMessage
+                ChannelData = new ChannelData { Tenant = new Tenant { Id = tenantID } }
             };
 
         }
 
 
         /// <summary>
-        /// To test CreateConversationAsync set the Conversation to null, which triggers the creation of a new one in the MessageConroller post flow
+        /// To test CreateConversationAsync set the Conversation to null, which triggers the creation of a new one in the MessageController post flow
         /// </summary>
         private void CreateConversation()
         {
