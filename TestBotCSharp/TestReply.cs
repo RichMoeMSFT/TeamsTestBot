@@ -854,6 +854,8 @@ namespace TestBotCSharp
 
         /// <summary>
         /// Sign-in Card type
+        /// 
+        /// NOTE: you can't use the signin action type - use openURL
         /// </summary>
         private void SignInMessage()
         {
@@ -1020,7 +1022,6 @@ namespace TestBotCSharp
             );
 
             m_replyMessage.Attachments = new List<Attachment> { card };
-
 
         }
 
