@@ -57,9 +57,13 @@ namespace TestBotCSharp
                     var conversationId = await connector.Conversations.CreateConversationAsync(conversationParams);
                     if (conversationId != null)
                     {
-                        reply.Text += "\n\n\nConversationID returned by CreateConversationAsync: " + conversationId.Id;
-                        reply.Conversation = new ConversationAccount(id: conversationId.Id);
-                        await connector.Conversations.SendToConversationAsync(reply);
+
+                        IMessageActivity message = Activity.CreateMessageActivity();
+                        message.From = new ChannelAccount(activity.Recipient.Id, activity.Recipient.Name);
+                        //message.Recipient = ;
+                        message.Conversation = new ConversationAccount(id: conversationId.Id);
+                        message.Text = "Hello, this is a 1:1 message created by me - " + activity.Recipient.Name;
+                        await connector.Conversations.SendToConversationAsync((Activity)message);
                     }
                     if (dumpReply != null)
                         await connector.Conversations.ReplyToActivityAsync(dumpReply);
