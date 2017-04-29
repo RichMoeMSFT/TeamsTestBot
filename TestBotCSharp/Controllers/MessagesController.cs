@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
@@ -30,14 +31,14 @@ namespace TestBotCSharp
             {
 
                 testReply = new TestBotCSharp.TestReply(connector);
-                reply = testReply.CreateMessage(activity);
+                reply = await testReply.CreateMessage(activity);
                 dumpReply = testReply.DumpMessage(activity, reply);
 
             }
             else
             {
                 testReply = new TestBotCSharp.SystemReply(connector);
-                reply = testReply.CreateMessage(activity);
+                reply = await testReply.CreateMessage(activity);
             }
 
             if (reply != null)
@@ -67,6 +68,27 @@ namespace TestBotCSharp
                     }
                     if (dumpReply != null)
                         await connector.Conversations.ReplyToActivityAsync(dumpReply);
+                }
+                else if (reply.Conversation.Id == "GetAttach")
+                {
+                    var attachment = activity.Attachments.First();
+                    using (HttpClient httpClient = new HttpClient())
+                    {
+                        // Skype & MS Teams attachment URLs are secured by a JwtToken, so we need to pass the token from our bot.
+                        if (new Uri(attachment.ContentUrl).Host.EndsWith("skype.com"))
+                        {
+                            var token = await new MicrosoftAppCredentials().GetTokenAsync();
+                            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                        }
+
+                        var responseMessage = await httpClient.GetAsync(attachment.ContentUrl);
+
+                        //var contentLengthBytes = responseMessage.Content.Headers.ContentLength;
+
+                        //reply.Text = "I received a file of size: " + contentLengthBytes;
+                        //await connector.Conversations.ReplyToActivityAsync(reply);
+
+                    }
                 }
                 else if (reply.Conversation.Id != activity.Conversation.Id)
                 {

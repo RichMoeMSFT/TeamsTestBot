@@ -1,6 +1,7 @@
 ﻿using Microsoft.Bot.Connector;
 using Newtonsoft.Json;
 using System;
+using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -88,6 +89,7 @@ namespace TestBotCSharp
             m_cmdToTestDetail.Add("videocard", new TestDetail("!Display a Video Card - not supported", VideoCardMessage));
             m_cmdToTestDetail.Add("audiocard", new TestDetail("!Display an Audio Card - not supported", AudioCardMessage));
 
+            m_cmdToTestDetail.Add("getattach", new TestDetail("!Send an inline attachment (img, gif) to your bot", GetAttachMessage));
 
             m_cmdToTestDetail.Add("signin", new TestDetail("Show a Signin Card, with button to launch [URL]",SignInMessage));
             m_cmdToTestDetail.Add("formatxml", new TestDetail("Display a [\"sample\"] selection of XML formats", FormatXMLMessage));
@@ -99,8 +101,8 @@ namespace TestBotCSharp
 
             m_cmdToTestDetail.Add("members", new TestDetail("Show members of the team", MembersTest));
 
-            m_cmdToTestDetail.Add("create", new TestDetail("Create a new conversation", CreateConversation));
-            m_cmdToTestDetail.Add("create11", new TestDetail("Create a new 1:1 conversation", Create11Conversation));
+            m_cmdToTestDetail.Add("create", new TestDetail("Create a new conversation in channel", CreateConversation));
+            m_cmdToTestDetail.Add("create11", new TestDetail("Create a new 1:1 conversation (send message to you)", Create11Conversation));
 
             m_cmdToTestDetail.Add("imback", new TestDetail("!This is just a handler for the imback buttons", ImBackResponse));
 
@@ -197,7 +199,7 @@ namespace TestBotCSharp
         /// </summary>
         /// <param name="messageIn"></param>
         /// <returns></returns>
-        public override Activity CreateMessage(Activity messageIn)
+        public override async Task<Activity> CreateMessage(Activity messageIn)
         {
             m_sourceMessage = messageIn; //Store off so we don't pass around
 
@@ -251,7 +253,7 @@ namespace TestBotCSharp
                     //Dispatch the command - check dictionary for command and run the appropriate function.
                     if (m_cmdToTestDetail.ContainsKey(testcommand))
                     {
-                        m_cmdToTestDetail[testcommand].buildMessage();
+                        await Task.Run(() => m_cmdToTestDetail[testcommand].buildMessage());
                     }
                     else
                     {
@@ -1055,6 +1057,22 @@ namespace TestBotCSharp
 
 
         /// <summary>
+        /// 
+        /// </summary>
+        private void GetAttachMessage()
+        {
+            if (m_sourceMessage.Attachments == null)
+            {
+                m_replyMessage.Text = "Please paste an inline image/gif in your message";
+                return;
+            }
+
+            //Trigger a new 1:1conversation to be created in MessagesController:
+            m_replyMessage.Conversation.Id = "GetAttach";
+
+        }
+
+        /// <summary>
         /// This sets a flag for the main message loop to use the create1-1 flow using the ConversationParameters set below. 
         /// 
         /// This routine is leveraging the fact that my inbound message has the user and bot identities, as well as the tenantID I need to create the
@@ -1064,15 +1082,14 @@ namespace TestBotCSharp
         ///     1) CreateConversationAsync with the appropriate conversation parameters will return the conversationID for the user
         ///     2) SendMessage to the conversationID to send the actual text.
         /// </summary>
-        private void Create11Conversation()
+        private async void Create11()
         {
-
             //Retrieve the tenantID from the incoming message.
             JObject cd = (JObject)m_sourceMessage.ChannelData;
-            string tenantID = (string) cd["tenant"]["id"];
+            string tenantID = (string)cd["tenant"]["id"];
 
             //Trigger a new 1:1conversation to be created in MessagesController:
-            m_replyMessage.Conversation.Id = "1:1";
+            //m_replyMessage.Conversation.Id = "1:1";
 
             //Create the conversation params, leveraging information from the incoming payload
             m_conversationParams = new ConversationParameters
@@ -1083,8 +1100,30 @@ namespace TestBotCSharp
                 ChannelData = new ChannelData { Tenant = new Tenant { Id = tenantID } }
             };
 
+            //ConversationParameters conversationParams = testReply.GetConversationParameters();
+
+            var conversationId = await m_connector.Conversations.CreateConversationAsync(m_conversationParams);
+            if (conversationId != null)
+            {
+
+                IMessageActivity message = Activity.CreateMessageActivity();
+                message.From = new ChannelAccount(m_sourceMessage.Recipient.Id, m_sourceMessage.Recipient.Name);
+                //message.Recipient = ;
+                message.Conversation = new ConversationAccount(id: conversationId.Id);
+                message.Text = "Hello, this is a 1:1 message created by me - " + m_sourceMessage.Recipient.Name;
+                await m_connector.Conversations.SendToConversationAsync((Activity)message);
+            }
+
         }
 
+
+        private void Create11Conversation()
+        {
+
+            Create11();
+
+            m_replyMessage.Text = "Should have just sent to 1:1";
+        }
 
         /// <summary>
         /// To test CreateConversationAsync set the Conversation to null, which triggers the creation of a new one in the MessageController post flow

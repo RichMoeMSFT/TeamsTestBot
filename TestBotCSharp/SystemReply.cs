@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Web;
+using System.Threading.Tasks;
 using Microsoft.Bot.Connector;
 using System.Collections;
 using Newtonsoft.Json.Linq;
@@ -16,7 +17,7 @@ namespace TestBotCSharp
 
         }
 
-        public override Activity CreateMessage(Activity messageIn)
+        public override async Task<Activity> CreateMessage(Activity messageIn)
         {
             m_sourceMessage = messageIn;
             m_replyMessage = null;
