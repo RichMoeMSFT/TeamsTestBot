@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using System.Web.Http;
 using System.Web.Http.Description;
@@ -30,14 +31,14 @@ namespace TestBotCSharp
             {
 
                 testReply = new TestBotCSharp.TestReply(connector);
-                reply = testReply.CreateMessage(activity);
+                reply = await testReply.CreateMessage(activity);
                 dumpReply = testReply.DumpMessage(activity, reply);
 
             }
             else
             {
                 testReply = new TestBotCSharp.SystemReply(connector);
-                reply = testReply.CreateMessage(activity);
+                reply = await testReply.CreateMessage(activity);
             }
 
             if (reply != null)
@@ -47,24 +48,6 @@ namespace TestBotCSharp
                     ConversationParameters conversationParams = testReply.GetConversationParameters();
 
                     await connector.Conversations.CreateConversationAsync(conversationParams);
-                    if (dumpReply != null)
-                        await connector.Conversations.ReplyToActivityAsync(dumpReply);
-                }
-                else if (reply.Conversation.Id == "1:1")
-                {
-                    ConversationParameters conversationParams = testReply.GetConversationParameters();
-
-                    var conversationId = await connector.Conversations.CreateConversationAsync(conversationParams);
-                    if (conversationId != null)
-                    {
-
-                        IMessageActivity message = Activity.CreateMessageActivity();
-                        message.From = new ChannelAccount(activity.Recipient.Id, activity.Recipient.Name);
-                        //message.Recipient = ;
-                        message.Conversation = new ConversationAccount(id: conversationId.Id);
-                        message.Text = "Hello, this is a 1:1 message created by me - " + activity.Recipient.Name;
-                        await connector.Conversations.SendToConversationAsync((Activity)message);
-                    }
                     if (dumpReply != null)
                         await connector.Conversations.ReplyToActivityAsync(dumpReply);
                 }

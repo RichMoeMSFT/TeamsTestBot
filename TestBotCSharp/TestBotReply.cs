@@ -4,6 +4,7 @@ using System.Linq;
 using System.Web;
 using Microsoft.Bot.Connector;
 using Newtonsoft.Json;
+using System.Threading.Tasks;
 
 namespace TestBotCSharp
 {
@@ -25,7 +26,7 @@ namespace TestBotCSharp
 
         }
 
-        public virtual Activity CreateMessage(Activity messageIn)
+        public virtual async Task<Activity> CreateMessage(Activity messageIn)
         {
             return null;
         }
