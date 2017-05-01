@@ -51,45 +51,6 @@ namespace TestBotCSharp
                     if (dumpReply != null)
                         await connector.Conversations.ReplyToActivityAsync(dumpReply);
                 }
-                else if (reply.Conversation.Id == "1:1")
-                {
-                    ConversationParameters conversationParams = testReply.GetConversationParameters();
-
-                    var conversationId = await connector.Conversations.CreateConversationAsync(conversationParams);
-                    if (conversationId != null)
-                    {
-
-                        IMessageActivity message = Activity.CreateMessageActivity();
-                        message.From = new ChannelAccount(activity.Recipient.Id, activity.Recipient.Name);
-                        //message.Recipient = ;
-                        message.Conversation = new ConversationAccount(id: conversationId.Id);
-                        message.Text = "Hello, this is a 1:1 message created by me - " + activity.Recipient.Name;
-                        await connector.Conversations.SendToConversationAsync((Activity)message);
-                    }
-                    if (dumpReply != null)
-                        await connector.Conversations.ReplyToActivityAsync(dumpReply);
-                }
-                else if (reply.Conversation.Id == "GetAttach")
-                {
-                    var attachment = activity.Attachments.First();
-                    using (HttpClient httpClient = new HttpClient())
-                    {
-                        // Skype & MS Teams attachment URLs are secured by a JwtToken, so we need to pass the token from our bot.
-                        if (new Uri(attachment.ContentUrl).Host.EndsWith("skype.com"))
-                        {
-                            var token = await new MicrosoftAppCredentials().GetTokenAsync();
-                            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                        }
-
-                        var responseMessage = await httpClient.GetAsync(attachment.ContentUrl);
-
-                        //var contentLengthBytes = responseMessage.Content.Headers.ContentLength;
-
-                        //reply.Text = "I received a file of size: " + contentLengthBytes;
-                        //await connector.Conversations.ReplyToActivityAsync(reply);
-
-                    }
-                }
                 else if (reply.Conversation.Id != activity.Conversation.Id)
                 {
                     await connector.Conversations.SendToConversationAsync(reply);

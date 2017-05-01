@@ -8,7 +8,7 @@ using System.Linq;
 using System.Net.Http;
 using System.Web;
 using Newtonsoft.Json.Linq;
-
+using System.Net.Http.Headers;
 
 namespace TestBotCSharp
 {
@@ -1068,8 +1068,31 @@ namespace TestBotCSharp
             }
 
             //Trigger a new 1:1conversation to be created in MessagesController:
-            m_replyMessage.Conversation.Id = "GetAttach";
+            doGetAttachMessage();
 
+        }
+
+        private async void doGetAttachMessage()
+        {
+
+            var attachment = m_sourceMessage.Attachments.First();
+            using (HttpClient httpClient = new HttpClient())
+            {
+                // Skype & MS Teams attachment URLs are secured by a JwtToken, so we need to pass the token from our bot.
+                if (new Uri(attachment.ContentUrl).Host.EndsWith("skype.com"))
+                {
+                    var token = await new MicrosoftAppCredentials().GetTokenAsync();
+                    httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+                }
+
+                var responseMessage = await httpClient.GetAsync(attachment.ContentUrl);
+
+                var contentLengthBytes = responseMessage.Content.Headers.ContentLength;
+
+                m_replyMessage.Text = "I received a file of size: " + contentLengthBytes;
+                await m_connector.Conversations.ReplyToActivityAsync(m_replyMessage);
+
+            }
         }
 
         /// <summary>
