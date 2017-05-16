@@ -1,14 +1,13 @@
 ﻿using Microsoft.Bot.Connector;
-using Newtonsoft.Json;
 using System;
 using System.Threading.Tasks;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
-using System.Web;
 using Newtonsoft.Json.Linq;
 using System.Net.Http.Headers;
+using Microsoft.Bot.Connector.Teams.Models;
+using Microsoft.Bot.Connector.Teams;
 
 namespace TestBotCSharp
 {
@@ -105,6 +104,8 @@ namespace TestBotCSharp
 
             m_cmdToTestDetail.Add("create", new TestDetail("Create a new conversation in channel", CreateConversation));
             m_cmdToTestDetail.Add("create11", new TestDetail("Create a new 1:1 conversation (send message to you)", Create11Conversation));
+
+            m_cmdToTestDetail.Add("channels", new TestDetail("Show all channels in the team", ChannelsTest));
 
             m_cmdToTestDetail.Add("imback", new TestDetail("!This is just a handler for the imback buttons", ImBackResponse));
 
@@ -1094,6 +1095,18 @@ namespace TestBotCSharp
                 m_replyMessage.Text = "I received a file of size: " + contentLengthBytes;
                 await m_connector.Conversations.ReplyToActivityAsync(m_replyMessage);
 
+            }
+        }
+
+        private void ChannelsTest()
+        {
+            ConversationList channels = m_connector.GetTeamsConnectorClient().Teams.FetchChannelList(m_sourceMessage.GetChannelData<TeamsChannelData>().Team.Id);
+
+            m_replyMessage.Text = "There are " + channels.Conversations.Count + " channels: \n";
+            foreach (ChannelInfo c in channels.Conversations)
+            {
+                m_replyMessage.Text += "**ID:** " + c.Id;
+                m_replyMessage.Text += "\n**Name:** " + c.Name + "\n";
             }
         }
 
