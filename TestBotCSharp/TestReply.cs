@@ -91,6 +91,8 @@ namespace TestBotCSharp
 
             m_cmdToTestDetail.Add("getattach", new TestDetail("!Send an inline attachment (img, gif) to your bot", GetAttachMessage));
 
+            m_cmdToTestDetail.Add("update", new TestDetail("!Update a message", UpdateMessage));
+
             m_cmdToTestDetail.Add("signin", new TestDetail("Show a Signin Card, with button to launch [URL]",SignInMessage));
             m_cmdToTestDetail.Add("formatxml", new TestDetail("Display a [\"sample\"] selection of XML formats", FormatXMLMessage));
             m_cmdToTestDetail.Add("formatmd", new TestDetail("Display a [\"sample\"] selection of Markdown formats", FormatMDMessage));
@@ -1251,6 +1253,24 @@ namespace TestBotCSharp
 
             m_replyMessage.Text = text;
             m_replyMessage.TextFormat = TextFormatTypes.Markdown;
+
+        }
+
+        private async void doUpdateMessage()
+        {
+
+            
+            m_replyMessage.Text = "This is the original message that I will update";
+            var msgToUpdate = await m_connector.Conversations.ReplyToActivityAsync(m_replyMessage);
+
+            Activity updatedReply = m_sourceMessage.CreateReply("This is the updated message!");
+            await m_connector.Conversations.UpdateActivityAsync(m_replyMessage.Conversation.Id, msgToUpdate.Id, updatedReply);
+
+        }
+
+        private void UpdateMessage()
+        {
+            doUpdateMessage();
 
         }
 
