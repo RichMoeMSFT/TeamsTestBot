@@ -9,10 +9,12 @@ using System.Web.Http.Description;
 using Microsoft.Bot.Connector;
 using Microsoft.Bot.Builder.Dialogs;
 using Newtonsoft.Json;
+using Microsoft.Bot.Connector.Teams;
 
 namespace TestBotCSharp
 {
     [BotAuthentication]
+    [TenantFilter]
     public class MessagesController : ApiController
     {
         /// <summary>
