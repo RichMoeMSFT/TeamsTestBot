@@ -31,10 +31,17 @@ namespace TestBotCSharp
 
             if (activity.Type == ActivityTypes.Message || activity.Type == ActivityTypes.Invoke)
             {
+                if (true)
+                {
+                    await Conversation.SendAsync(activity, () => new TestBotDialog());
+                }
+                else
+                {
 
-                testReply = new TestBotCSharp.TestReply(connector);
-                reply = await testReply.CreateMessage(activity);
-                dumpReply = testReply.DumpMessage(activity, reply);
+                    testReply = new TestBotCSharp.TestReply(connector);
+                    reply = await testReply.CreateMessage(activity);
+                    dumpReply = testReply.DumpMessage(activity, reply);
+                }
 
             }
             else
