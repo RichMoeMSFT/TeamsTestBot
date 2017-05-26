@@ -47,11 +47,13 @@ namespace TestBotCSharp
             public string about;
             public delegate Task<bool> buildMessage();
             public buildMessage func;
+            public bool isAsync;
 
-            public TestDetail(string x, buildMessage y)
+            public TestDetail(string x, buildMessage y, bool z = false)
             {
                 about = x;
                 func = y;
+                isAsync = z;
             }
 
         }
@@ -267,8 +269,15 @@ namespace TestBotCSharp
                         //var x = await m_cmdToTestDetail[testcommand].buildMessage();
                         //IAsyncResult ar = m_cmdToTestDetail[testcommand].func.BeginInvoke(null, null);
                         //var x = m_cmdToTestDetail[testcommand].func.EndInvoke(ar);
- 
-                        var x = await m_cmdToTestDetail[testcommand].func();
+
+                        if (m_cmdToTestDetail[testcommand].isAsync)
+                        {
+                            var x = await m_cmdToTestDetail[testcommand].func();
+                        } 
+                        else
+                        {
+                            var x = m_cmdToTestDetail[testcommand].func();
+                        }
  
                     }
                     else
