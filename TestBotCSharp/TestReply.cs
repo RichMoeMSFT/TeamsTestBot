@@ -13,21 +13,6 @@ using Microsoft.Bot.Builder.Dialogs;
 namespace TestBotCSharp
 {
 
-    public class ChannelData
-    {
-        public string TeamsChannelId { get; set; }
-        public string TeamsTeamId { get; set; }
-        public Tenant Tenant { get; set; }
-    }
-
-    public class Tenant
-    {
-        public string Id { get; set; }
-    }
-
-
-
-
     public class TestReply : TestBotReply
     {
         private static string S_STANDARD_IMGURL = "https://skypeteamsbotstorage.blob.core.windows.net/bottestartifacts/panoramic.png";
@@ -58,14 +43,18 @@ namespace TestBotCSharp
 
         }
 
-        private readonly Dictionary<string, TestDetail> m_cmdToTestDetail;
+        private  Dictionary<string, TestDetail> m_cmdToTestDetail;
         public TestReply(ConnectorClient c) : base(c)
         {
+            CreateCommandList();
         }
-        public TestReply(IDialogContext c) : base (c)
-        { 
+        public TestReply(IDialogContext c) : base(c)
+        {
+            CreateCommandList();
 
-         
+        }
+        private void CreateCommandList()
+        { 
             m_cmdToTestDetail = new Dictionary<string, TestDetail>(StringComparer.InvariantCultureIgnoreCase);
             m_cmdToTestDetail.Add("help", new TestDetail("Show this message", HelpMessage));
             
@@ -97,7 +86,7 @@ namespace TestBotCSharp
             
             m_cmdToTestDetail.Add("getattach", new TestDetail("!Send an inline attachment (img, gif) to your bot", GetAttachMessage));
             
-            m_cmdToTestDetail.Add("update", new TestDetail("!Update a message", UpdateMessage));
+            m_cmdToTestDetail.Add("update", new TestDetail("Update a message", UpdateMessage, true));
 
             m_cmdToTestDetail.Add("signin", new TestDetail("Show a Signin Card, with button to launch [URL]",SignInMessage));
             m_cmdToTestDetail.Add("formatxml", new TestDetail("Display a [\"sample\"] selection of XML formats", FormatXMLMessage));
@@ -107,7 +96,7 @@ namespace TestBotCSharp
             m_cmdToTestDetail.Add("mentions", new TestDetail("Show the @mentions you pass", MentionsTest));
             m_cmdToTestDetail.Add("mentionUser", new TestDetail("@mentions the passed user", MentionUser));
 
-            m_cmdToTestDetail.Add("members", new TestDetail("Show members of the team", MembersTest));
+            m_cmdToTestDetail.Add("members", new TestDetail("Show members of the team", MembersTest, true));
 
             m_cmdToTestDetail.Add("create", new TestDetail("Create a new conversation in channel", CreateConversation));
             m_cmdToTestDetail.Add("create11", new TestDetail("Create a new 1:1 conversation (send message to you)", Create11Conversation));
@@ -171,6 +160,11 @@ namespace TestBotCSharp
 
   
             return messageText;
+        }
+
+        private ConnectorClient getConnector()
+        {
+            return new ConnectorClient(new Uri(m_sourceMessage.ServiceUrl));
         }
 
         /// <summary>
@@ -1122,15 +1116,14 @@ namespace TestBotCSharp
         /// </summary>
         private async Task<bool> GetAttachMessage()
         {
-            if (m_sourceMessage.Attachments == null)
+            //Attachments always have text, so we need at least 2 attachments
+            if (m_sourceMessage.Attachments == null || m_sourceMessage.Attachments.Count < 2)
             {
                 m_replyMessage.Text = "Please paste an inline image/gif in your message";
                 return true;
             }
 
-            //var localReply = m_replyMessage;
-            //m_replyMessage = null;
-            //Trigger a new 1:1conversation to be created in MessagesController:
+            //Assume (which is risky) first attachment = image
             var attachment = m_sourceMessage.Attachments.First();
             using (HttpClient httpClient = new HttpClient())
             {
@@ -1145,40 +1138,22 @@ namespace TestBotCSharp
 
                 var contentLengthBytes = responseMessage.Content.Headers.ContentLength;
 
-                m_replyMessage.Text = "I received a file of size: " + contentLengthBytes;
-                //await m_dialogContext.PostAsync(m_replyMessage);
+                m_replyMessage.Text = "I received a file of type: " + responseMessage.Content.Headers.ContentType + ", size: " + contentLengthBytes;
+                await m_dialogContext.PostAsync(m_replyMessage);
 
             }
             return false;
 
         }
 
-        private async void doGetAttachMessage()
-        {
 
-            var attachment = m_sourceMessage.Attachments.First();
-            using (HttpClient httpClient = new HttpClient())
-            {
-                // Skype & MS Teams attachment URLs are secured by a JwtToken, so we need to pass the token from our bot.
-                if (new Uri(attachment.ContentUrl).Host.EndsWith("skype.com"))
-                {
-                    var token = await new MicrosoftAppCredentials().GetTokenAsync();
-                    httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                }
-
-                var responseMessage = await httpClient.GetAsync(attachment.ContentUrl);
-
-                var contentLengthBytes = responseMessage.Content.Headers.ContentLength;
-
-                m_replyMessage.Text = "I received a file of size: " + contentLengthBytes;
-                await m_connector.Conversations.ReplyToActivityAsync(m_replyMessage);
-
-            }
-        }
 
         private async Task<bool> ChannelsTest()
         {
-            ConversationList channels = m_connector.GetTeamsConnectorClient().Teams.FetchChannelList(m_sourceMessage.GetChannelData<TeamsChannelData>().Team.Id);
+
+            ConnectorClient connector = new ConnectorClient(new Uri(m_sourceMessage.ServiceUrl));
+
+            ConversationList channels = connector.GetTeamsConnectorClient().Teams.FetchChannelList(m_sourceMessage.GetChannelData<TeamsChannelData>().Team.Id);
 
             m_replyMessage.Text = "There are " + channels.Conversations.Count + " channels: \n\n\n";
             foreach (ChannelInfo c in channels.Conversations)
@@ -1190,59 +1165,36 @@ namespace TestBotCSharp
         }
 
         /// <summary>
-        /// This sets a flag for the main message loop to use the create1-1 flow using the ConversationParameters set below. 
-        /// 
-        /// This routine is leveraging the fact that my inbound message has the user and bot identities, as well as the tenantID I need to create the
-        /// appropriate ConverstationParameters.
+        /// This routine is leveraging the fact that my inbound message has the user and bot identities, as well as the tenantID.
         /// 
         /// Note that creating a new conversation is a multi-step process:  
-        ///     1) CreateConversationAsync with the appropriate conversation parameters will return the conversationID for the user
+        ///     1) CreateOrGetDirectConversation with the appropriate conversation parameters will return the conversationID for the user
         ///     2) SendMessage to the conversationID to send the actual text.
         /// </summary>
-        private async Task<bool> Create11()
-        {
-            //Retrieve the tenantID from the incoming message.
-            JObject cd = (JObject)m_sourceMessage.ChannelData;
-            string tenantID = (string)cd["tenant"]["id"];
-
-            //Trigger a new 1:1conversation to be created in MessagesController:
-            //m_replyMessage.Conversation.Id = "1:1";
-
-            //Create the conversation params, leveraging information from the incoming payload
-            m_conversationParams = new ConversationParameters
-            {
-
-                Bot = new ChannelAccount(m_sourceMessage.Recipient.Id, m_sourceMessage.Recipient.Name),
-                Members = new ChannelAccount[] { new ChannelAccount(m_sourceMessage.From.Id) },
-                ChannelData = new ChannelData { Tenant = new Tenant { Id = tenantID } }
-            };
-
-            //ConversationParameters conversationParams = testReply.GetConversationParameters();
-
-            var conversationId = await m_connector.Conversations.CreateConversationAsync(m_conversationParams);
-            if (conversationId != null)
-            {
-
-                IMessageActivity message = Activity.CreateMessageActivity();
-                message.From = new ChannelAccount(m_sourceMessage.Recipient.Id, m_sourceMessage.Recipient.Name);
-                //message.Recipient = ;
-                message.Conversation = new ConversationAccount(id: conversationId.Id);
-                message.Text = "Hello, this is a 1:1 message created by me - " + m_sourceMessage.Recipient.Name;
-                await m_connector.Conversations.SendToConversationAsync((Activity)message);
-            }
-
-            return false;
-        }
-
-
         private async Task<bool> Create11Conversation()
         {
-
-            Create11();
-
+            //Message for main loop
             m_replyMessage.Text = "Should have just sent to 1:1";
 
-            return true;
+            //Create new message
+            ConnectorClient connector = new ConnectorClient(new Uri(m_sourceMessage.ServiceUrl));
+            var response = connector.Conversations.CreateOrGetDirectConversation(m_sourceMessage.Recipient, m_sourceMessage.From, m_sourceMessage.GetTenantId());
+
+            Activity newActivity = new Activity()
+            {
+                Text = "Hello, this is a 1:1 message created by me - " + m_sourceMessage.Recipient.Name,
+                Type = ActivityTypes.Message,
+                Conversation = new ConversationAccount
+                {
+                    Id = response.Id
+                },
+            };
+
+            await connector.Conversations.SendToConversationAsync(newActivity, response.Id);
+
+
+
+            return false;
         }
 
         /// <summary>
@@ -1258,22 +1210,29 @@ namespace TestBotCSharp
                 return true;
             }
 
-            m_replyMessage.Text = "This is a new Conversation created with CreateConversationAsync().";
-            m_replyMessage.Text += "<br/><br/> ChannelID = " + m_sourceMessage.ChannelId;
-            m_replyMessage.Text += "<br/>ConversationID (in) = " + m_sourceMessage.Conversation.Id;
+            //Message for main loop
+            m_replyMessage.Text = "Creating new Conversation thread";
 
+            //Create new message:
+            Activity newActivity = new Activity()
+            {
+                Type = ActivityTypes.Message,
+            };
 
-            m_conversationParams = new ConversationParameters(
+            newActivity.Text = "This is a new Conversation created with CreateConversationAsync().";
+            newActivity.Text += "<br/><br/> **ChannelID:** " + m_sourceMessage.ChannelId;
+            newActivity.Text += "<br/>**ConversationID (in):** " + m_sourceMessage.Conversation.Id;
+
+            ConversationParameters conversationParams = new ConversationParameters(
                 isGroup: true,
                 bot: null,
                 members: null,
                 topicName: "New Conversation",
-                activity: (Activity)m_replyMessage,
+                activity: newActivity,
                 channelData: m_sourceMessage.ChannelData
             );
 
-            //Trigger a new conversation to be created in MessagesController:
-            m_replyMessage.Conversation = null;
+            await getConnector().Conversations.CreateConversationAsync(conversationParams);
 
             return false;
 
@@ -1282,7 +1241,7 @@ namespace TestBotCSharp
         /// <summary>
         /// Retrieve and display all Team Members, leveraging the GetConversationMembers function from BotFramework.  Note that this only has relevance in a Group context.
         /// </summary>
-        private async Task<bool> MembersTest() //doFetchRoster()
+        private async Task<bool> MembersTest() 
         {
 
             //Check to validate this is in group context.
@@ -1295,7 +1254,10 @@ namespace TestBotCSharp
             var localReply = m_replyMessage;
             m_replyMessage = null;
 
-            var members = await m_connector.Conversations.GetTeamsConversationMembersAsync(m_sourceMessage.Conversation.Id, m_sourceMessage.GetTenantId());
+            ConnectorClient c = new ConnectorClient(new Uri(m_sourceMessage.ServiceUrl));
+            var t = m_sourceMessage.GetTenantId();
+
+            var members = await c.Conversations.GetTeamsConversationMembersAsync(m_sourceMessage.Conversation.Id, t);
 
             localReply.Text = "These are the member userids returned by the GetConversationMembers() function.\n\n";
 
@@ -1310,7 +1272,7 @@ namespace TestBotCSharp
             }
             localReply.Text += sb;
 
-            await m_connector.Conversations.ReplyToActivityAsync(localReply);
+            await m_dialogContext.PostAsync(localReply);
 
             return false;
         }
@@ -1370,14 +1332,26 @@ namespace TestBotCSharp
 
         }
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <returns></returns>
         private async Task<bool> UpdateMessage()
         {
 
-            m_replyMessage.Text = "This is the original message that I will update";
-            var msgToUpdate = await m_connector.Conversations.ReplyToActivityAsync(m_replyMessage);
+            m_replyMessage = null;
 
-            Activity updatedReply = m_sourceMessage.CreateReply("This is the updated message!");
-            await m_connector.Conversations.UpdateActivityAsync(m_replyMessage.Conversation.Id, msgToUpdate.Id, updatedReply);
+            ConnectorClient connector = getConnector();
+
+            string message = $"You sent {m_sourceMessage.Text} which was {m_sourceMessage.Text.Length} characters";
+
+            Activity reply = m_sourceMessage.CreateReply(message);
+
+            var msgToUpdate = await connector.Conversations.ReplyToActivityAsync(reply);
+
+            Activity updatedReply = m_sourceMessage.CreateReply("This is an updated message.  Previous message was: <br/>" + message);
+
+            await connector.Conversations.UpdateActivityAsync(reply.Conversation.Id, msgToUpdate.Id, updatedReply);
 
             return false;
 
