@@ -137,6 +137,7 @@
   <ItemGroup>
     <Compile Include="App_Start\WebApiConfig.cs" />
     <Compile Include="ActivityDumper.cs" />
+    <Compile Include="TestBotDialog.cs" />
     <Compile Include="TestBotReply.cs" />
     <Compile Include="Controllers\MessagesController.cs" />
     <Compile Include="Global.asax.cs">

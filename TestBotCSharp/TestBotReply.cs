@@ -5,6 +5,7 @@ using System.Web;
 using Microsoft.Bot.Connector;
 using Newtonsoft.Json;
 using System.Threading.Tasks;
+using Microsoft.Bot.Builder.Dialogs;
 
 namespace TestBotCSharp
 {
@@ -14,8 +15,11 @@ namespace TestBotCSharp
         protected Activity m_sourceMessage;
         protected Activity m_replyMessage;
         protected List<string> m_args;
+       
 
         protected ConnectorClient m_connector;
+
+        protected IDialogContext m_dialogContext;
 
         protected ConversationParameters m_conversationParams;
 
@@ -23,7 +27,15 @@ namespace TestBotCSharp
         {
             m_connector = c;
             m_conversationParams = null;
+            m_dialogContext = null;
 
+        }
+
+        public TestBotReply(IDialogContext c)
+        {
+            m_connector = null;
+            m_dialogContext = c;
+            m_conversationParams = null;
         }
 
         public virtual async Task<Activity> CreateMessage(Activity messageIn)
