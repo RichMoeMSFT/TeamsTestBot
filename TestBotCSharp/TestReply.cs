@@ -1141,6 +1141,9 @@ namespace TestBotCSharp
                 m_replyMessage.Text = "I received a file of type: " + responseMessage.Content.Headers.ContentType + ", size: " + contentLengthBytes;
                 await m_dialogContext.PostAsync(m_replyMessage);
 
+                Activity dumpReply = DumpMessage(m_sourceMessage, m_replyMessage);
+                if (dumpReply != null) await m_dialogContext.PostAsync(dumpReply);
+
             }
             return false;
 
@@ -1192,7 +1195,8 @@ namespace TestBotCSharp
 
             await connector.Conversations.SendToConversationAsync(newActivity, response.Id);
 
-
+            Activity dumpReply = DumpMessage(m_sourceMessage, newActivity);
+            if (dumpReply != null) await m_dialogContext.PostAsync(dumpReply);
 
             return false;
         }
@@ -1234,6 +1238,9 @@ namespace TestBotCSharp
 
             await getConnector().Conversations.CreateConversationAsync(conversationParams);
 
+            Activity dumpReply = DumpMessage(m_sourceMessage, newActivity);
+            if (dumpReply != null) await m_dialogContext.PostAsync(dumpReply);
+
             return false;
 
         }
@@ -1273,6 +1280,9 @@ namespace TestBotCSharp
             localReply.Text += sb;
 
             await m_dialogContext.PostAsync(localReply);
+
+            Activity dumpReply = DumpMessage(m_sourceMessage, localReply);
+            if (dumpReply != null) await m_dialogContext.PostAsync(dumpReply);
 
             return false;
         }
@@ -1352,6 +1362,9 @@ namespace TestBotCSharp
             Activity updatedReply = m_sourceMessage.CreateReply("This is an updated message.  Previous message was: <br/>" + message);
 
             await connector.Conversations.UpdateActivityAsync(reply.Conversation.Id, msgToUpdate.Id, updatedReply);
+
+            Activity dumpReply = DumpMessage(m_sourceMessage, updatedReply);
+            if (dumpReply != null) await m_dialogContext.PostAsync(dumpReply);
 
             return false;
 
