@@ -107,7 +107,9 @@ namespace TestBotCSharp
 
             m_cmdToTestDetail.Add("dumpin", new TestDetail("Display the incoming JSON", ActivityDumpIn));
             m_cmdToTestDetail.Add("dumpout", new TestDetail("Display the outgoing JSON", ActivityDumpOut));
-            
+
+            m_cmdToTestDetail.Add("suggested", new TestDetail("!Suggested Action test", SuggestedActionTest));
+            m_cmdToTestDetail.Add("inputhint", new TestDetail("!InputHints test", InputHintsTest));
         }
 
         /// <summary>
@@ -1368,6 +1370,34 @@ namespace TestBotCSharp
 
             return false;
 
+        }
+
+        private async Task<bool> SuggestedActionTest()
+        {
+            m_replyMessage.Text = "I have colors in mind, but need your help to choose the best one.";
+
+            m_replyMessage.SuggestedActions = new SuggestedActions()
+            {
+                Actions = new List<CardAction>()
+                {
+                    new CardAction(){ Title = "Blue", Type=ActionTypes.ImBack, Value="Blue" },
+                    new CardAction(){ Title = "Red", Type=ActionTypes.ImBack, Value="Red" },
+                    new CardAction(){ Title = "Green", Type=ActionTypes.ImBack, Value="Green" }
+                }
+            };
+
+            return true;
+        }
+
+
+        private async Task<bool> InputHintsTest()
+        {
+            m_replyMessage.Text = "This is the text that will be displayed.";
+            m_replyMessage.Speak = "This is the text that will be spoken.";
+            m_replyMessage.InputHint = InputHints.AcceptingInput;
+
+
+            return true;
         }
 
         /// <summary>
