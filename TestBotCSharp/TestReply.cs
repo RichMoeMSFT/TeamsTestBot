@@ -79,6 +79,7 @@ namespace TestBotCSharp
             m_cmdToTestDetail.Add("thumblist", new TestDetail("Show a List with [5] identical thumbnails", ThumbnailListMessage));
             m_cmdToTestDetail.Add("thumbRYO", new TestDetail("Roll your own: [\"Title\"] [\"SubTitle\"] [\"Content\"] [\"ImageURL\"] [ImBack Button count] ", HeroRYOMessage));
 
+            m_cmdToTestDetail.Add("connectorcard", new TestDetail("!Connector Card", ConnectorCardTest));
 
             m_cmdToTestDetail.Add("animcard", new TestDetail("!Display an Animation Card - not supported", AnimationCardMessage));
             m_cmdToTestDetail.Add("videocard", new TestDetail("!Display a Video Card - not supported", VideoCardMessage));
@@ -432,7 +433,8 @@ namespace TestBotCSharp
                 {
                     Title = "Invoke " + i,
                     Type = "invoke",
-                    Value = "{\"invokeValue:\": \"" + i + "\"}"
+                    Value = "Good"
+                    //Value = "{\"invokeValue:\": \"" + i + "\"}"
                 };
             }
 
@@ -1340,6 +1342,67 @@ namespace TestBotCSharp
 
             return true;
 
+        }
+
+        private async Task<bool> ConnectorCardTest()
+        {
+
+            var section = new O365ConnectorCardSection(
+             "This is the **section's title** property",
+             "This is the section's text property. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+             "This is the section's activityTitle property",
+             "This is the section's activitySubtitle property",
+             "This is the section's activityText property.",
+             "http://connectorsdemo.azurewebsites.net/images/MSC12_Oscar_002.jpg",
+             new List<O365ConnectorCardFact>()
+             {
+                            new O365ConnectorCardFact("This is a fact name", "This is a fact value"),
+                            new O365ConnectorCardFact("This is a fact name", "This is a fact value"),
+                            new O365ConnectorCardFact("This is a fact name", "This is a fact value")
+             },
+             new List<O365ConnectorCardImage>()
+             {
+                            new O365ConnectorCardImage("http://connectorsdemo.azurewebsites.net/images/MicrosoftSurface_024_Cafe_OH-06315_VS_R1c.jpg"),
+                            new O365ConnectorCardImage("http://connectorsdemo.azurewebsites.net/images/WIN12_Scene_01.jpg"),
+                            new O365ConnectorCardImage("http://connectorsdemo.azurewebsites.net/images/WIN12_Anthony_02.jpg")
+             },
+             new List<O365ConnectorCardActionBase>()
+             {
+                            new O365ConnectorCardViewAction()
+                            {
+                                Type = O365ConnectorCardViewAction.ContentType,
+                                Name = "View",
+                                Target = new List<string>() { "http://microsoft.com" }
+                            },
+                            new O365ConnectorCardViewAction()
+                            {
+                                Type = O365ConnectorCardViewAction.ContentType,
+                                Name = "View",
+                                Target = new List<string>() { "http://microsoft.com" }
+                            }
+             });
+
+
+
+            var card = new O365ConnectorCard(
+                "This is the card title property",
+                "This is the card's text property. Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
+                "This is the summary property",
+                "E81123",
+                new List<O365ConnectorCardSection>() { section }
+            );
+
+            m_replyMessage.Attachments = new List<Attachment>()
+            {
+                new Attachment
+                {
+                    Content = card,
+                    ContentType = O365ConnectorCard.ContentType
+                }
+                
+            };
+
+            return true;
         }
 
         /// <summary>

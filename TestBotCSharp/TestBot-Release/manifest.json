@@ -1,0 +1,25 @@
+﻿{
+  "$schema": "https://statics.teams.microsoft.com/sdk/v0.4/manifest/MicrosoftTeams.schema.json", 
+  "manifestVersion": "0.4",
+  "version": "1.0",
+  "developer": {
+    "name": "Richard Moe",
+    "websiteUrl": "https://dev.office.com/microsoft-teams",
+    "privacyUrl": "https://www.microsoft.com/en-us/privacystatement/OnlineServices/Default.aspx",
+    "termsOfUseUrl": "https://msdn.microsoft.com/en-US/cc300389"
+  },
+  "bots": [
+    {
+      "mri": "c9e8c047-2a74-40a2-b28a-b162d5f5327c", 
+      "pinnedTabs": [
+        {
+          "id": "sampleTab",  
+          "definitionId": "com.sample.tab",
+          "displayName": "Sample Tab",
+          "url": "https://dev.office.com/microsoft-teams",  
+          "websiteUrl": "https://dev.office.com/microsoft-teams" 
+        }
+      ]
+    }
+  ]
+}
