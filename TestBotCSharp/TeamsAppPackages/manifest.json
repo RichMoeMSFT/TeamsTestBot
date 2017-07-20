@@ -1,0 +1,48 @@
+﻿{
+  "$schema": "https://statics.teams.microsoft.com/sdk/v1.0/manifest/MicrosoftTeams.schema.json", 
+  "manifestVersion": "1.0",
+  "version": "1.0.0",
+  "id": "c9e8c047-2a74-40a2-b28a-b162d5f5327c",
+  "packageName": "com.teamstestbot.www",
+  "developer": {
+    "name": "Richard Moe",
+    "websiteUrl": "https://dev.office.com/microsoft-teams",
+    "privacyUrl": "https://www.microsoft.com/en-us/privacystatement/OnlineServices/Default.aspx",
+    "termsOfUseUrl": "https://msdn.microsoft.com/en-US/cc300389"
+  },
+  "name": {         
+    "short": "Teams TestBot .NET",
+    "full": "Teams TestBot (.NET SDK)"
+  },
+  "description" : {         
+    "short": "Test out common Teams functionality",
+    "full": "Test out common Teams functionality, see inbound and outbound payloads, and download the source code on GitHub.  (C# / .NET SDK edition)."
+  },
+  "icons": {       
+    "outline": "testbot-outline.png", 
+    "color": "testbot-color.png"
+  },
+  "accentColor": "#8819FF",
+  "staticTabs": [
+    {
+      "entityId": "sampleTab",  
+      "name": "Sample Tab",
+      "contentUrl": "https://dev.office.com/microsoft-teams",  
+      "websiteUrl": "https://dev.office.com/microsoft-teams",
+      "scopes": ["personal"]
+    }
+  ],
+  "bots": [
+    {
+      "botId": "c9e8c047-2a74-40a2-b28a-b162d5f5327c", 
+      "scopes": ["team", "personal"]
+    }
+  ],
+  "permissions": [
+    "identity",
+    "messageTeamMembers"
+  ],
+  "validDomains": [
+    "dev.office.com"
+  ]
+}
